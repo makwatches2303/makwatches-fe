@@ -1,4 +1,4 @@
-import type { ElementType, HTMLAttributes, ReactNode } from "react";
+import { Children, type ElementType, type HTMLAttributes, type ReactNode } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -198,6 +198,29 @@ export function RuleGrid({
 }: RuleGridProps) {
   const { base = 1, md = 2, lg = 3 } = cols ?? {};
 
+  // An incomplete last row leaves empty grid tracks with no child to paint
+  // .mak-rule-grid's own cell background over them, so the container's
+  // divider-colored background shows through as a stray filled-in box.
+  // Filler cells (invisible, no content) close those gaps. base=1 never
+  // has this problem -- a single column is always "full" -- so fillers
+  // only ever need to render from md upward.
+  const count = Children.count(children);
+  const neededAtMd = (md - (count % md)) % md;
+  const neededAtLg = (lg - (count % lg)) % lg;
+  const fillerCount = Math.max(neededAtMd, neededAtLg);
+  const fillers = Array.from({ length: fillerCount }, (_, i) => (
+    <div
+      key={`filler-${i}`}
+      aria-hidden="true"
+      className={cn(
+        "hidden",
+        i < neededAtMd && i < neededAtLg && "md:block",
+        i < neededAtMd && i >= neededAtLg && "md:block lg:hidden",
+        i >= neededAtMd && i < neededAtLg && "lg:block"
+      )}
+    />
+  ));
+
   return (
     <div
       className={cn(
@@ -211,6 +234,7 @@ export function RuleGrid({
       {...rest}
     >
       {children}
+      {fillers}
     </div>
   );
 }
