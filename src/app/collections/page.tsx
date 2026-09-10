@@ -8,6 +8,7 @@ import {
   Heading,
   RuleGrid,
   Section,
+  SectionHeader,
   Text,
 } from "@/design-system";
 import { fetchCategories, fetchCollections } from "@/lib/api/server";
@@ -45,22 +46,28 @@ export default async function CollectionsPage() {
 
   const hasCollections = collections.length > 0;
 
+  // Men and Women each have their own Metal/Leather/Silver watch
+  // subcategory -- a flat list of every subcategory would show "Leather
+  // watch" twice with nothing to tell the two apart. Grouping by main
+  // category under its own heading disambiguates them without having to
+  // repeat "Men —"/"Women —" on every single tile.
   const entries = hasCollections
     ? collections.map((c) => ({
         name: c.name,
         href: `/collections/${c.slug}`,
         count: c.count,
       }))
-    : categories.flatMap((category) =>
-        (category.subcategories ?? []).map((sub) => ({
-          // Men and Women each have their own Metal/Leather/Silver watch
-          // subcategory -- prefixing with the main category keeps those
-          // distinct entries from reading as duplicates of each other.
-          name: `${category.name} — ${titleCase(sub.name)}`,
+    : [];
+
+  const groups = hasCollections
+    ? []
+    : categories.map((category) => ({
+        name: category.name,
+        entries: (category.subcategories ?? []).map((sub) => ({
+          name: titleCase(sub.name),
           href: `/category/${slugify(sub.name)}?mainCategory=${encodeURIComponent(category.name)}`,
-          count: undefined as number | undefined,
-        }))
-      );
+        })),
+      }));
 
   return (
     <div className="mak bg-mak-bg">
@@ -81,35 +88,69 @@ export default async function CollectionsPage() {
         </Container>
       </Section>
 
-      <Section spacing="default">
-        <Container>
-          {entries.length === 0 ? (
+      {hasCollections ? (
+        <Section spacing="default">
+          <Container>
+            {entries.length === 0 ? (
+              <EmptyState
+                title="Nothing to browse yet."
+                description="Once products are grouped into collections they will appear here."
+              />
+            ) : (
+              <RuleGrid cols={{ base: 1, md: 2, lg: 3 }}>
+                {entries.map((entry) => (
+                  <Link
+                    key={entry.href}
+                    href={entry.href}
+                    className="group flex min-h-32 flex-col justify-between p-7 no-underline transition-colors hover:bg-mak-surface focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-mak-accent"
+                  >
+                    <span className="font-display text-mak-title font-extrabold tracking-[-0.025em] text-mak-ink group-hover:text-mak-accent">
+                      {entry.name}
+                    </span>
+                    {typeof entry.count === "number" ? (
+                      <span className="mt-3 text-mak-label uppercase tracking-[0.14em] text-mak-muted">
+                        {entry.count} {entry.count === 1 ? "piece" : "pieces"}
+                      </span>
+                    ) : null}
+                  </Link>
+                ))}
+              </RuleGrid>
+            )}
+          </Container>
+        </Section>
+      ) : groups.every((group) => group.entries.length === 0) ? (
+        <Section spacing="default">
+          <Container>
             <EmptyState
               title="Nothing to browse yet."
-              description="Once products are grouped into collections they will appear here."
+              description="Once categories have subcategories they will appear here."
             />
-          ) : (
-            <RuleGrid cols={{ base: 1, md: 2, lg: 3 }}>
-              {entries.map((entry) => (
-                <Link
-                  key={entry.href}
-                  href={entry.href}
-                  className="group flex min-h-32 flex-col justify-between p-7 no-underline transition-colors hover:bg-mak-surface focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-mak-accent"
-                >
-                  <span className="font-display text-mak-title font-extrabold tracking-[-0.025em] text-mak-ink group-hover:text-mak-accent">
-                    {entry.name}
-                  </span>
-                  {typeof entry.count === "number" ? (
-                    <span className="mt-3 text-mak-label uppercase tracking-[0.14em] text-mak-muted">
-                      {entry.count} {entry.count === 1 ? "piece" : "pieces"}
-                    </span>
-                  ) : null}
-                </Link>
-              ))}
-            </RuleGrid>
-          )}
-        </Container>
-      </Section>
+          </Container>
+        </Section>
+      ) : (
+        groups.map((group) =>
+          group.entries.length === 0 ? null : (
+            <Section key={group.name} spacing="default">
+              <Container>
+                <SectionHeader title={group.name} className="mb-8" />
+                <RuleGrid cols={{ base: 1, md: 2, lg: 3 }}>
+                  {group.entries.map((entry) => (
+                    <Link
+                      key={entry.href}
+                      href={entry.href}
+                      className="group flex min-h-32 flex-col justify-between p-7 no-underline transition-colors hover:bg-mak-surface focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-mak-accent"
+                    >
+                      <span className="font-display text-mak-title font-extrabold tracking-[-0.025em] text-mak-ink group-hover:text-mak-accent">
+                        {entry.name}
+                      </span>
+                    </Link>
+                  ))}
+                </RuleGrid>
+              </Container>
+            </Section>
+          )
+        )
+      )}
     </div>
   );
 }
