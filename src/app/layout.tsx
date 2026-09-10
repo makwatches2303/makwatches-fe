@@ -4,7 +4,6 @@ import "./globals.css";
 import { fontVariables } from "@/lib/fonts";
 import { AuthProvider } from "@/context/AuthContext";
 import { ToastProvider } from "@/design-system";
-import ShoppingLayout from "./ShoppingLayout";
 import NavGuard from "@/components/NavGuard";
 import FooterGuard from "@/components/FooterGuard";
 import { Footer as MakFooter } from "@/components/layout/Footer";
@@ -175,15 +174,15 @@ export default async function RootLayout({
       </head>
       <body className="antialiased min-h-screen flex flex-col">
         <LenisProvider>
-          <AuthProvider>
-            {/*
-              The toast queue lives here rather than inside MakChrome: the
-              chrome renders as a *sibling* of the page, so a provider mounted
-              there never wrapped page content and any page calling useToast
-              threw. Feedback is app-wide, so its provider belongs above both.
-            */}
-            <ToastProvider>
-            <ShoppingLayout>
+          {/*
+            ToastProvider wraps AuthProvider, not the other way around:
+            AuthContext's login/register report failures through useToast(),
+            and a provider can only be called from inside its own tree. The
+            chrome (NavGuard/main/FooterGuard) renders as a child of both
+            either way, so nothing about its own access to toast changes.
+          */}
+          <ToastProvider>
+            <AuthProvider>
               {/* NavGuard will hide Navbar on /login */}
               <NavGuard navigation={storefront.navigation} />
 
@@ -202,9 +201,8 @@ export default async function RootLayout({
                   />
                 }
               />
-            </ShoppingLayout>
-            </ToastProvider>
-          </AuthProvider>
+            </AuthProvider>
+          </ToastProvider>
         </LenisProvider>
       </body>
     </html>

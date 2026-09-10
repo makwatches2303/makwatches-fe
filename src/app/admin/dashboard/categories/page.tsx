@@ -12,6 +12,8 @@ import {
   ArrowPathIcon,
   ExclamationCircleIcon,
 } from "@heroicons/react/24/outline";
+import { useToast } from "@/design-system";
+import { COLORS } from "../colors";
 
 // Types
 interface Subcategory {
@@ -27,25 +29,8 @@ interface Category {
 
 // Using shared API client (baseURL + auth headers handled centrally)
 
-// Enhanced Color constants - luxury theme with rich black and gold
-const COLORS = {
-  primary: "#D4AF37", // Luxury Gold
-  primaryDark: "#A67C00", // Darker Gold
-  primaryLight: "#F4CD68", // Lighter Gold
-  secondary: "#0F0F0F", // Rich Black
-  background: "#FFFFFF", // White
-  surface: "#F8F8F8", // Off-White
-  surfaceLight: "#F0F0F0", // Light Gray
-  text: "#0F0F0F", // Rich Black for text
-  textMuted: "#6D6D6D", // Muted Gray
-  error: "#B00020", // Deep Red
-  success: "#006400", // Deep Green
-  inputBg: "#FFFFFF", // White
-  inputBorder: "#D4AF37", // Gold for borders
-  inputFocus: "#A67C00", // Darker Gold for focus
-};
-
 const CategoriesPage: React.FC = () => {
+  const { toast } = useToast();
   const [categories, setCategories] = useState<Category[]>([]);
   const [activeMain, setActiveMain] = useState<"Men" | "Women">("Men");
   const [loading, setLoading] = useState(false);
@@ -214,6 +199,7 @@ const CategoriesPage: React.FC = () => {
         `/admin/categories/${categoryId}/subcategories/${subId}`
       );
       fetchCategories();
+      toast("Subcategory deleted.", { tone: "success" });
     } catch (err: unknown) {
       const axErr = err as AxiosError<{ message?: string }>;
       const status = axErr?.response?.status;
@@ -226,7 +212,7 @@ const CategoriesPage: React.FC = () => {
         }
         return;
       }
-      alert(message);
+      toast(message, { tone: "error" });
     }
   };
 

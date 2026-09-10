@@ -10,6 +10,8 @@ import React, {
 import { useRouter } from "next/navigation";
 import api from "@/lib/api";
 import Cookies from "js-cookie";
+import { useToast } from "@/design-system";
+import { getErrorMessage } from "@/lib/errors";
 
 type UserRole = "customer" | "admin" | null;
 
@@ -80,6 +82,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [role, setRole] = useState<UserRole>(null);
   const [loading, setLoading] = useState(true);
   const router = useRouter();
+  const { toast } = useToast();
 
   const normalizeRole = (value: unknown): UserRole => {
     if (!value) return null;
@@ -218,11 +221,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         );
       }
     } catch (error: unknown) {
-      if (typeof error === "object" && error !== null && "message" in error) {
-        alert(
-          (error as { message?: string }).message || "Authentication failed"
-        );
-      }
+      toast(getErrorMessage(error, "Sign in failed. Please try again."), {
+        tone: "error",
+      });
+
       if (typeof error === "object" && error !== null && "response" in error) {
         const errObj = error as {
           response?: { data?: unknown };
@@ -249,6 +251,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       await login(data.email, data.password, regRole); // auto login with explicit role
     } catch (error: unknown) {
+      toast(getErrorMessage(error, "Registration failed. Please try again."), {
+        tone: "error",
+      });
+
       if (typeof error === "object" && error !== null && "response" in error) {
         console.error(
           "Register failed: ",

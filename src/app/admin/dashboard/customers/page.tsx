@@ -10,24 +10,9 @@ import {
   ExclamationCircleIcon,
   UserGroupIcon,
 } from "@heroicons/react/24/outline";
-
-// Enhanced Color constants - luxury theme with rich black and gold
-const COLORS = {
-  primary: "#D4AF37", // Luxury Gold
-  primaryDark: "#A67C00", // Darker Gold
-  primaryLight: "#F4CD68", // Lighter Gold
-  secondary: "#0F0F0F", // Rich Black
-  background: "#FFFFFF", // White
-  surface: "#F8F8F8", // Off-White
-  surfaceLight: "#F0F0F0", // Light Gray
-  text: "#0F0F0F", // Rich Black for text
-  textMuted: "#6D6D6D", // Muted Gray
-  error: "#B00020", // Deep Red
-  success: "#006400", // Deep Green
-  inputBg: "#FFFFFF", // White
-  inputBorder: "#D4AF37", // Gold for borders
-  inputFocus: "#A67C00", // Darker Gold for focus
-};
+import { useToast } from "@/design-system";
+import { getErrorMessage } from "@/lib/errors";
+import { COLORS } from "../colors";
 
 interface Account {
   id: string;
@@ -37,6 +22,7 @@ interface Account {
 }
 
 export default function AccountsPage() {
+  const { toast } = useToast();
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -60,6 +46,9 @@ export default function AccountsPage() {
       setAccounts(normalized);
     } catch (error) {
       console.error("Error fetching accounts", error);
+      toast(getErrorMessage(error, "Failed to load accounts."), {
+        tone: "error",
+      });
     } finally {
       setLoading(false);
     }
@@ -68,15 +57,19 @@ export default function AccountsPage() {
   // Delete Account
   const handleDelete = async (id?: string) => {
     if (!id) {
-      alert("Invalid account ID.");
+      toast("Invalid account ID.", { tone: "error" });
       return;
     }
     if (!confirm("Are you sure?")) return;
     try {
       await api.delete(`/admin/accounts/${id}`);
       setAccounts(accounts.filter((a) => a.id !== id));
+      toast("Account deleted.", { tone: "success" });
     } catch (error) {
       console.error("Error deleting account", error);
+      toast(getErrorMessage(error, "Failed to delete account."), {
+        tone: "error",
+      });
     }
   };
 
