@@ -10,8 +10,12 @@ const customerProtectedRoutes = [
   "/favourite",
 ];
 
+// No bare "/admin" entry here: it has no route of its own, and as a prefix
+// it also matches "/admin/login" -- which sent an unauthenticated visitor
+// redirected *to* /admin/login straight back into the protected-route check
+// below, an infinite redirect loop. Caught by actually exercising this in a
+// browser, not by reading the code.
 const adminProtectedRoutes = [
-  "/admin",
   "/admin/dashboard",
   "/admin/overview",
   "/admin/manage-categories",

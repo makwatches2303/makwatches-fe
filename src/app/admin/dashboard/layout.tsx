@@ -1,7 +1,7 @@
 "use client";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import {
   FiBarChart,
@@ -14,24 +14,7 @@ import {
   FiHome,
   FiLayout,
 } from "react-icons/fi";
-
-// Enhanced Color constants - luxury theme with rich black and gold
-const COLORS = {
-  primary: "#D4AF37", // Luxury Gold
-  primaryDark: "#A67C00", // Darker Gold
-  primaryLight: "#F4CD68", // Lighter Gold
-  secondary: "#0F0F0F", // Rich Black
-  background: "#FFFFFF", // White
-  surface: "#F8F8F8", // Off-White
-  surfaceLight: "#F0F0F0", // Light Gray
-  text: "#0F0F0F", // Rich Black for text
-  textMuted: "#6D6D6D", // Muted Gray
-  error: "#B00020", // Deep Red
-  success: "#006400", // Deep Green
-  inputBg: "#FFFFFF", // White
-  inputBorder: "#D4AF37", // Gold for borders
-  inputFocus: "#A67C00", // Darker Gold for focus
-};
+import { COLORS } from "./colors";
 
 const navLinks = [
   {
@@ -158,10 +141,23 @@ export default function AdminLayout({
 }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const pathname = usePathname();
-  const { user, role, logout } = useAuth();
+  const router = useRouter();
+  const { user, role, loading, logout } = useAuth();
 
-  // Professional loading spinner instead of access denied
-  if (role !== "admin") {
+  // While AuthContext is still reading the token, show the spinner -- role
+  // hasn't resolved yet, so it isn't safe to say "not admin" either way.
+  // Once it *has* resolved and the visitor genuinely isn't an admin, send
+  // them to the login page instead of leaving them on a spinner that never
+  // stops (this used to be the only gate on /admin/dashboard/*, and it
+  // never actually turned visitors away -- see src/middleware.ts for the
+  // route-level gate that now runs before this component even mounts).
+  useEffect(() => {
+    if (!loading && role !== "admin") {
+      router.replace("/admin/login");
+    }
+  }, [loading, role, router]);
+
+  if (loading || role !== "admin") {
     return <LoadingSpinner />;
   }
 
