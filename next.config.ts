@@ -49,23 +49,27 @@ const nextConfig: NextConfig = {
   /**
    * Legacy route redirects.
    *
-   * Deliberately empty. The replacement routes do not exist yet, and a
-   * permanent redirect to a 404 is worse than the working legacy page: it is
-   * cached by browsers and search engines and is painful to undo.
+   * Phase 3 shipped, but not as a static rule here: /men/category/:id and
+   * /women/category/:id encode an opaque legacy id in the path and the real
+   * subcategory *name* in a ?name= query param (see how CategoryTile used to
+   * build these links, in git history). A static rewrite only has the id to
+   * work with, which doesn't slugify to anything /category/[slug] can look
+   * up -- so both legacy routes are now themselves thin Server Components
+   * that resolve the name to a slug (the same lookup /category/[slug] uses)
+   * and issue a permanentRedirect(), 404ing if the category no longer
+   * exists. See src/app/men/category/[subcategoryId]/page.tsx.
    *
-   * Activate each entry below only once its target route ships, one at a time:
+   * Deliberately still empty otherwise: remaining legacy routes' replacements
+   * do not exist yet, and a permanent redirect to a 404 is worse than the
+   * working legacy page -- it is cached by browsers and search engines and is
+   * painful to undo.
    *
    *   Phase 4 — /product/[slug] exists:
-   *     { source: "/product_details", destination: "/shop", permanent: false }
-   *     (a query-param id cannot be mapped to a slug in a static rule; the
-   *      rebuilt /product_details page should look the product up and issue a
-   *      307 to its slug, then this becomes a permanent rule)
-   *
-   *   Phase 3 — /category/[slug] exists:
-   *     { source: "/men/category/:id", destination: "/category/:id", permanent: true }
-   *     { source: "/women/category/:id", destination: "/category/:id", permanent: true }
-   *
-   * Until then, every legacy route keeps serving its existing page.
+   *     A static rule has the same problem as Phase 3 did: /product_details
+   *     identifies the product by a query-param id, not a path segment a
+   *     rewrite can map to a slug. The rebuilt /product_details page should
+   *     look the product up and issue its own redirect, the same way the
+   *     Phase 3 pages now do.
    */
   async redirects() {
     return [];

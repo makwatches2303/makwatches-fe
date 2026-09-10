@@ -1,7 +1,13 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "Men's Luxury Watches Collection - Designer Watches for Men | MAK Watches",
+  // No literal "| MAK Watches" here: the root layout's title.template
+  // ("%s | MAK Watches") already appends it. page.tsx under this segment
+  // overrides this with its own metadata, so this string was only ever
+  // reachable via the not-found fallback -- which is exactly where the
+  // doubled suffix showed up once something under /men actually called
+  // notFound() for the first time (see src/app/men/category/[subcategoryId]).
+  title: "Men's Luxury Watches Collection - Designer Watches for Men",
   description: "Browse our exclusive collection of men's luxury watches. Shop premium designer watches, sports watches, smartwatches, and elegant timepieces for men at MAK Watches. Authentic brands, best prices.",
   keywords: [
     "men's watches",

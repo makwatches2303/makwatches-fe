@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 
-import { fetchCategories } from "@/lib/api/server";
+import { resolveCategory } from "@/lib/category-lookup";
 import { CatalogListing } from "../../(shop)/CatalogListing";
 
 /**
@@ -11,32 +11,14 @@ import { CatalogListing } from "../../(shop)/CatalogListing";
  * subcategory names repeat across Men and Women. The slug therefore identifies
  * a *subcategory name*, and the listing spans both genders unless the URL
  * narrows it with ?mainCategory=Men.
+ *
+ * slugify/resolveCategory live in @/lib/category-lookup: the legacy
+ * /men/category/[subcategoryId] and /women/category/[subcategoryId] routes
+ * use the same resolution to redirect here (see those files for why that
+ * can't be a static next.config.ts rewrite).
  */
 
 export const revalidate = 300;
-
-/** Slugify the same way the backend does, so URLs round-trip. */
-function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-}
-
-/** Find the subcategory whose name slugifies to `slug`. */
-async function resolveCategory(slug: string) {
-  const categories = await fetchCategories();
-
-  for (const category of categories) {
-    for (const sub of category.subcategories ?? []) {
-      if (slugify(sub.name) === slug) {
-        return { parent: category.name, name: sub.name };
-      }
-    }
-  }
-  return null;
-}
 
 export async function generateMetadata({
   params,

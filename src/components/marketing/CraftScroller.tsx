@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type RefObject } from "react";
 
 import { cn } from "@/lib/utils";
 import {
@@ -46,11 +46,22 @@ export interface CraftScrollerProps {
 }
 
 /**
- * Rotation driven by page scroll, matching the reference's 0.08deg per pixel.
+ * Rotation driven by scroll *into this section*, matching the reference's
+ * 0.08deg per pixel.
+ *
+ * Reading window.scrollY directly used to drive this: the angle at rest
+ * depended on how far down the page the section happened to sit, so the
+ * visual loaded pre-tilted by an arbitrary amount instead of starting
+ * straight. Measuring from the section's own position instead means the dial
+ * is always upright the moment it comes on screen, and only turns as the
+ * reader scrolls through it.
  *
  * Returns 0 under reduced motion and attaches no listener at all in that case.
  */
-function useScrollRotation(enabled: boolean): number {
+function useScrollRotation(
+  enabled: boolean,
+  sectionRef: RefObject<HTMLElement | null>
+): number {
   const [angle, setAngle] = useState(0);
 
   useEffect(() => {
@@ -59,7 +70,13 @@ function useScrollRotation(enabled: boolean): number {
     let frame = 0;
     const update = () => {
       frame = 0;
-      setAngle((window.scrollY || 0) * 0.08);
+      const section = sectionRef.current;
+      if (!section) return;
+      // How far the section's top has scrolled past the viewport's top.
+      // Clamped at 0 so the dial sits straight for the whole approach, right
+      // up until the section actually starts scrolling past.
+      const scrolledIntoSection = Math.max(0, -section.getBoundingClientRect().top);
+      setAngle(scrolledIntoSection * 0.08);
     };
     const onScroll = () => {
       if (frame) return;
@@ -72,7 +89,7 @@ function useScrollRotation(enabled: boolean): number {
       if (frame) window.cancelAnimationFrame(frame);
       window.removeEventListener("scroll", onScroll);
     };
-  }, [enabled]);
+  }, [enabled, sectionRef]);
 
   return angle;
 }
@@ -112,8 +129,8 @@ function PanelBody({ panel }: { panel: CraftPanel }) {
 
 export function CraftScroller({ panels, className }: CraftScrollerProps) {
   const reducedMotion = usePrefersReducedMotion();
-  const rotation = useScrollRotation(!reducedMotion);
   const sectionRef = useRef<HTMLElement>(null);
+  const rotation = useScrollRotation(!reducedMotion, sectionRef);
 
   if (panels.length === 0) return null;
 

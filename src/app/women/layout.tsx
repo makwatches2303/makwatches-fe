@@ -1,7 +1,8 @@
 import { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: "Women's Luxury Watches Collection - Designer Watches for Women | MAK Watches",
+  // See src/app/men/layout.tsx -- same reasoning, mirrored for Women.
+  title: "Women's Luxury Watches Collection - Designer Watches for Women",
   description: "Explore our exquisite collection of women's luxury watches. Shop elegant designer watches, smartwatches, and premium timepieces for women at MAK Watches. Authentic brands, exclusive designs.",
   keywords: [
     "women's watches",
