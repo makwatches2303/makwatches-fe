@@ -265,6 +265,18 @@ export function CheckoutFlow() {
       return;
     }
 
+    // Save phone for abandoned cart recovery tracking if user drops off
+    if (effectiveAddress.phone) {
+      try {
+        localStorage.setItem("mak_user_phone", effectiveAddress.phone);
+        if (effectiveAddress.name) {
+          localStorage.setItem("mak_user_name", effectiveAddress.name);
+        }
+      } catch {
+        // Ignore storage errors
+      }
+    }
+
     const details =
       serviceability ?? (await verifyPincode(effectiveAddress.zipCode));
 
@@ -356,6 +368,8 @@ export function CheckoutFlow() {
     } catch (error: unknown) {
       setPlaceError(
         error instanceof ApiError
+          ? error.message
+          : error instanceof Error
           ? error.message
           : "We could not place your order. Nothing has been charged."
       );

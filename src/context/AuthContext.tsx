@@ -137,6 +137,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   }, []);
 
   useEffect(() => {
+    // Check for flash toast set before redirects (such as OAuth callbacks)
+    if (typeof window !== "undefined") {
+      try {
+        const flash = sessionStorage.getItem("mak_auth_toast");
+        if (flash) {
+          sessionStorage.removeItem("mak_auth_toast");
+          setTimeout(() => {
+            toast(flash, { tone: "success" });
+          }, 150);
+        }
+      } catch {
+        // ignore storage errors
+      }
+    }
+
     const customerToken = Cookies.get("customerToken");
     const adminToken = Cookies.get("adminToken");
     const token = customerToken || adminToken;
@@ -163,7 +178,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       setUser(null);
       setLoading(false);
     }
-  }, [fetchProfile]);
+  }, [fetchProfile, toast]);
 
   const login = async (
     email: string,
@@ -207,6 +222,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       setRole(userRole);
       setUser(loggedInUser);
+      toast("You have successfully signed in. Welcome back!", { tone: "success" });
       if (userRole === "customer") {
         // Come back to where they were sent from -- someone who was asked to
         // sign in partway through checkout should land back on checkout, not

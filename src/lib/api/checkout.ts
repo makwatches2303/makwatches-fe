@@ -6,7 +6,7 @@
  * order if the two disagree -- it is a tripwire, not an input.
  */
 
-import { ApiError, http } from "./client";
+import { ApiError, apiClient, http } from "./client";
 import type { Address } from "./addresses";
 
 /**
@@ -83,15 +83,40 @@ interface RazorpayOrderEnvelope {
  * is worth.
  */
 export async function createRazorpayIntent(): Promise<RazorpayIntent> {
-  const envelope = await http.post<RazorpayOrderEnvelope>(
-    "/payments/razorpay/order"
-  );
-  return {
-    key: envelope.key,
-    amount: envelope.amount,
-    currency: envelope.currency,
-    orderId: envelope.data.id,
-  };
+  const res = await apiClient().post("/payments/razorpay/order");
+  const body = res.data;
+
+  // Extract key, amount, currency, and orderId defensively from root or unwrapped data
+  const data = body?.data && typeof body.data === "object" ? body.data : {};
+  const key =
+    body?.key ||
+    data?.key ||
+    process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID ||
+    "";
+  const amount =
+    typeof body?.amount === "number"
+      ? body.amount
+      : typeof data?.amount === "number"
+      ? data.amount
+      : 0;
+  const currency = body?.currency || data?.currency || "INR";
+  const orderId =
+    data?.orderId ||
+    data?.id ||
+    body?.orderId ||
+    body?.id ||
+    data?.raw?.id ||
+    data?.order?.id ||
+    "";
+
+  if (!key || !orderId || !amount) {
+    throw new ApiError(
+      body?.message || "Could not initialize payment with Razorpay. Please try again.",
+      res.status || 500
+    );
+  }
+
+  return { key, amount, currency, orderId };
 }
 
 export type PaymentMethod = "razorpay" | "cod";

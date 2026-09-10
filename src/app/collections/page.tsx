@@ -45,36 +45,43 @@ export default async function CollectionsPage() {
 
   const hasCollections = collections.length > 0;
 
+  // Deduplicate subcategories across all categories into a single unified list
+  const subcategoryMap = new Map<string, { name: string; href: string; count?: number }>();
+
+  for (const category of categories) {
+    for (const sub of category.subcategories ?? []) {
+      const slug = slugify(sub.name);
+      if (!subcategoryMap.has(slug)) {
+        subcategoryMap.set(slug, {
+          name: titleCase(sub.name),
+          href: `/category/${slug}`,
+          count: undefined,
+        });
+      }
+    }
+  }
+
   const entries = hasCollections
     ? collections.map((c) => ({
         name: c.name,
         href: `/collections/${c.slug}`,
         count: c.count,
       }))
-    : categories.flatMap((category) =>
-        (category.subcategories ?? []).map((sub) => ({
-          name: titleCase(sub.name),
-          href: `/category/${slugify(sub.name)}?mainCategory=${encodeURIComponent(category.name)}`,
-          count: undefined as number | undefined,
-        }))
-      );
+    : Array.from(subcategoryMap.values());
 
   return (
     <div className="mak bg-mak-bg">
       <Section spacing="tight" className="border-b-2 border-mak-line">
         <Container>
           <Eyebrow withRule className="mb-4">
-            {hasCollections ? "Collections" : "Browse by category"}
+            Collections
           </Eyebrow>
           <Heading level="display" as="h1">
-            {hasCollections ? "The collections." : "Every category."}
+            The collections.
           </Heading>
-          {!hasCollections ? (
-            <Text size="lead" tone="muted" className="mt-4 max-w-2xl">
-              Editorial collections are not set up yet, so this lists the
-              catalogue&rsquo;s categories instead.
-            </Text>
-          ) : null}
+          <Text size="lead" tone="muted" className="mt-4 max-w-2xl">
+            Explore the complete MAK Watches collection by category.
+          </Text>
         </Container>
       </Section>
 
