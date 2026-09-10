@@ -1,103 +1,109 @@
-import { Mail, Phone, MapPin, Building2 } from "lucide-react";
+import type { Metadata } from "next";
+import { Mail, Phone, MapPin, Building2, type LucideIcon } from "lucide-react";
+import {
+  Container,
+  Section,
+  Eyebrow,
+  Heading,
+  Text,
+  RuleGrid,
+  RuleGridCell,
+  Reveal,
+} from "@/design-system";
+import { MAK_CONTACT } from "@/components/marketing/policy";
+
+export const metadata: Metadata = {
+  title: "Contact Us",
+  description:
+    "Reach MAK Watches by phone, email, or post -- we're here to help with your timepiece needs.",
+  alternates: { canonical: "/contact" },
+};
+
+function ContactMethod({
+  icon: Icon,
+  label,
+  children,
+}: {
+  icon: LucideIcon;
+  label: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex items-start gap-4">
+      <Icon className="mt-0.5 size-6 shrink-0 text-mak-accent" aria-hidden="true" />
+      <div>
+        <Heading level="subheading" as="h3" className="mb-1.5">
+          {label}
+        </Heading>
+        <Text tone="muted">{children}</Text>
+      </div>
+    </div>
+  );
+}
 
 export default function ContactPage() {
   return (
-    <div className="min-h-screen bg-white text-black">
-      {/* Hero Section */}
-      <section className="pt-32 pb-16 px-4 bg-gradient-to-b from-amber-50 to-white">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-5xl md:text-6xl font-bold mb-6 bg-gradient-to-r from-amber-600 via-yellow-600 to-amber-600 bg-clip-text text-transparent">
-            Contact Us
-          </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-            We&apos;re here to assist you with your timepiece needs. Reach out
-            to us through any of the channels below.
-          </p>
-        </div>
-      </section>
+    <div className="mak">
+      <Section tone="ink" spacing="loose">
+        <Container size="narrow" className="text-center">
+          <Reveal>
+            <Eyebrow tone="accent" className="justify-center">
+              Get in Touch
+            </Eyebrow>
+            <Heading level="hero" tone="inverse" className="mt-4">
+              Contact us
+            </Heading>
+            <Text size="lead" tone="inverse" className="mx-auto mt-6 max-w-xl opacity-70">
+              We&apos;re here to help with your timepiece needs. Reach out through any of the
+              channels below.
+            </Text>
+          </Reveal>
+        </Container>
+      </Section>
 
-      {/* Contact Information */}
-      <section className="py-16 px-4">
-        <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-8">
-          {/* Contact Methods */}
-          <div className="space-y-6">
-            <div className="bg-white border-2 border-amber-200 rounded-lg p-8 hover:border-amber-500 hover:shadow-xl transition-all duration-300">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-lg">
-                  <Phone className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold mb-2 text-black">
-                    Phone
-                  </h3>
-                  <a
-                    href="tel:9974959693"
-                    className="text-gray-600 hover:text-amber-600 transition-colors font-medium"
-                  >
-                    +91 9974959693
+      <Section spacing="loose">
+        <Container size="narrow">
+          <Reveal>
+            <RuleGrid cols={{ base: 1, md: 2, lg: 2 }}>
+              <RuleGridCell>
+                <ContactMethod icon={Phone} label="Phone">
+                  <a href={`tel:${MAK_CONTACT.phone}`} className="text-mak-accent hover:underline">
+                    {MAK_CONTACT.phoneDisplay}
                   </a>
-                </div>
-              </div>
-            </div>
+                </ContactMethod>
+              </RuleGridCell>
 
-            <div className="bg-white border-2 border-amber-200 rounded-lg p-8 hover:border-amber-500 hover:shadow-xl transition-all duration-300">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-lg">
-                  <Mail className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold mb-2 text-black">
-                    Email
-                  </h3>
+              <RuleGridCell>
+                <ContactMethod icon={Mail} label="Email">
                   <a
-                    href="mailto:makwatches2303@gmail.com"
-                    className="text-gray-600 hover:text-amber-600 transition-colors break-all font-medium"
+                    href={`mailto:${MAK_CONTACT.email}`}
+                    className="break-all text-mak-accent hover:underline"
                   >
-                    makwatches2303@gmail.com
+                    {MAK_CONTACT.email}
                   </a>
-                </div>
-              </div>
-            </div>
-          </div>
+                </ContactMethod>
+              </RuleGridCell>
 
-          {/* Address Information */}
-          <div className="space-y-6">
-            <div className="bg-white border-2 border-amber-200 rounded-lg p-8 hover:border-amber-500 hover:shadow-xl transition-all duration-300">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-lg">
-                  <Building2 className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold mb-2 text-black">
-                    Legal Entity
-                  </h3>
-                  <p className="text-gray-600 font-medium">MAK WATCHES</p>
-                </div>
-              </div>
-            </div>
+              <RuleGridCell>
+                <ContactMethod icon={Building2} label="Legal entity">
+                  MAK Watches
+                </ContactMethod>
+              </RuleGridCell>
 
-            <div className="bg-white border-2 border-amber-200 rounded-lg p-8 hover:border-amber-500 hover:shadow-xl transition-all duration-300">
-              <div className="flex items-start gap-4">
-                <div className="p-3 bg-gradient-to-br from-amber-400 to-yellow-600 rounded-lg">
-                  <MapPin className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h3 className="text-xl font-semibold mb-3 text-black">
-                    Address
-                  </h3>
-                  <div className="text-gray-600 space-y-1 font-medium">
-                    <p>Shree Ganesh Watch</p>
-                    <p>Matwa Street</p>
-                    <p>Near Balaji Cineplex</p>
-                    <p>Jetpur, Rajkot</p>
-                    <p>Gujarat - 360370</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+              <RuleGridCell>
+                <ContactMethod icon={MapPin} label="Address">
+                  {MAK_CONTACT.address.map((line, i) => (
+                    <span key={line}>
+                      {line}
+                      {i < MAK_CONTACT.address.length - 1 ? <br /> : null}
+                    </span>
+                  ))}
+                </ContactMethod>
+              </RuleGridCell>
+            </RuleGrid>
+          </Reveal>
+        </Container>
+      </Section>
     </div>
   );
 }

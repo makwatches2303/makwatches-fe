@@ -23,6 +23,13 @@ const REBUILT_EXACT = new Set<string>([
   "/wishlist",
   "/boutique",
   "/search",
+  "/about",
+  "/privacy",
+  "/terms",
+  "/shipping",
+  "/refund",
+  "/blog",
+  "/contact",
 ]);
 
 const REBUILT_PREFIXES: string[] = [
