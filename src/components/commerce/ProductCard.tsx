@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Badge, Price, Text } from "@/design-system";
 import type { Product } from "@/lib/api/types";
 import { resolveProductImage, IMAGE_SIZES } from "@/lib/media";
+import { effectivePrice } from "@/lib/pricing";
 import { useUIStore } from "@/store/ui";
 
 import { ProductImage } from "./ProductImage";
@@ -57,6 +58,7 @@ export function ProductCard({
   const image = resolveProductImage(product);
   const label = product.collection || product.subcategory || product.category;
   const soldOut = product.stock <= 0;
+  const { price, compareAt } = effectivePrice(product);
 
   // Suppress a brand line the product name already opens with.
   const brand = product.brand?.trim();
@@ -182,8 +184,8 @@ export function ProductCard({
         ) : null}
 
         <Price
-          value={product.price}
-          compareAt={product.compareAtPrice}
+          value={price}
+          compareAt={compareAt}
           size="md"
           className="mt-auto pt-3"
         />

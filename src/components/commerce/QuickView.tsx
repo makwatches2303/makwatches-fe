@@ -12,6 +12,7 @@ import {
 import type { Product } from "@/lib/api/types";
 import { presentSpecs } from "@/lib/specs";
 import { resolveProductImage, IMAGE_SIZES } from "@/lib/media";
+import { effectivePrice } from "@/lib/pricing";
 
 import { ProductImage } from "./ProductImage";
 import { AddToBagButton } from "./AddToBagButton";
@@ -44,6 +45,7 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
   const image = resolveProductImage(product);
   const specs = presentSpecs(product.specs);
   const label = product.collection || product.subcategory || product.category;
+  const { price, compareAt } = effectivePrice(product);
 
   return (
     <Modal
@@ -106,8 +108,8 @@ export function QuickView({ product, open, onClose }: QuickViewProps) {
           <div className="mt-auto pt-8">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <Price
-                value={product.price}
-                compareAt={product.compareAtPrice}
+                value={price}
+                compareAt={compareAt}
                 size="xl"
               />
               <div className="flex items-center gap-2">

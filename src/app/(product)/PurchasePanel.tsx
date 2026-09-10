@@ -13,6 +13,7 @@ import {
 } from "@/design-system";
 import { StockBadge, WishlistButton } from "@/components/commerce";
 import type { Product } from "@/lib/api/types";
+import { effectivePrice } from "@/lib/pricing";
 import { useCartStore } from "@/store/cart";
 import { useUIStore } from "@/store/ui";
 
@@ -94,6 +95,7 @@ export function PurchasePanel({ product }: PurchasePanelProps) {
 
   const soldOut = product.stock <= 0;
   const max = Math.max(1, product.stock);
+  const { price, compareAt } = effectivePrice(product);
 
   const addToBag = () => {
     addLine(product, quantity);
@@ -103,11 +105,7 @@ export function PurchasePanel({ product }: PurchasePanelProps) {
   return (
     <div className="flex flex-col gap-5">
       <div className="flex flex-wrap items-center gap-4">
-        <Price
-          value={product.price}
-          compareAt={product.compareAtPrice}
-          size="xl"
-        />
+        <Price value={price} compareAt={compareAt} size="xl" />
         <StockBadge stock={product.stock} />
       </div>
 
@@ -165,6 +163,7 @@ export function StickyPurchaseBar({ product }: PurchasePanelProps) {
 
   const soldOut = product.stock <= 0;
   const max = Math.max(1, product.stock);
+  const { price } = effectivePrice(product);
 
   return (
     <div
@@ -179,7 +178,7 @@ export function StickyPurchaseBar({ product }: PurchasePanelProps) {
             {product.name}
           </div>
           <div className="font-display text-lg font-extrabold text-mak-ink">
-            {formatPrice(product.price)}
+            {formatPrice(price)}
           </div>
         </div>
 

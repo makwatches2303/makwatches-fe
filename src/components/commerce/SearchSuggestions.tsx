@@ -6,6 +6,7 @@ import { cn } from "@/lib/utils";
 import { Price, Text } from "@/design-system";
 import type { SearchResult } from "@/lib/api/types";
 import { resolveProductImage, IMAGE_SIZES } from "@/lib/media";
+import { effectivePrice } from "@/lib/pricing";
 
 import { ProductImage } from "./ProductImage";
 import { productHref } from "./ProductCard";
@@ -125,7 +126,7 @@ export function SearchSuggestions({
                       </span>
                     ) : null}
                   </span>
-                  <Price value={product.price} size="sm" />
+                  <Price value={effectivePrice(product).price} size="sm" />
                 </Link>
               </li>
             ))}

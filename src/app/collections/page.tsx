@@ -33,6 +33,10 @@ function slugify(value: string): string {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
+function titleCase(value: string): string {
+  return value.replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 export default async function CollectionsPage() {
   const [collections, categories] = await Promise.all([
     fetchCollections(),
@@ -49,7 +53,10 @@ export default async function CollectionsPage() {
       }))
     : categories.flatMap((category) =>
         (category.subcategories ?? []).map((sub) => ({
-          name: sub.name,
+          // Men and Women each have their own Metal/Leather/Silver watch
+          // subcategory -- prefixing with the main category keeps those
+          // distinct entries from reading as duplicates of each other.
+          name: `${category.name} — ${titleCase(sub.name)}`,
           href: `/category/${slugify(sub.name)}?mainCategory=${encodeURIComponent(category.name)}`,
           count: undefined as number | undefined,
         }))
