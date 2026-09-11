@@ -102,6 +102,10 @@ export interface Product {
   slug?: string;
   sku?: string;
   collection?: string;
+  /** Links sibling colorways of the same watch. Empty means standalone. */
+  variantGroupId?: string;
+  /** Shown on the variant picker, e.g. "Elite Black". */
+  variantLabel?: string;
   compareAtPrice?: number;
   shortDescription?: string;
   specs?: ProductSpecs;

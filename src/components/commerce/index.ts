@@ -14,6 +14,7 @@ export { WishlistButton, type WishlistButtonProps } from "./WishlistButton";
 export { AddToBagButton, type AddToBagButtonProps } from "./AddToBagButton";
 export { QuickView, type QuickViewProps } from "./QuickView";
 export { StockBadge, type StockBadgeProps } from "./StockBadge";
+export { VariantPicker, type VariantPickerProps } from "./VariantPicker";
 
 export {
   FilterSidebar,

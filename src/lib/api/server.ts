@@ -383,6 +383,43 @@ export async function fetchRelatedProducts(
   return [];
 }
 
+// ── Variants ────────────────────────────────────────────────────────────────
+
+/**
+ * One sibling colorway of a product that belongs to a variant group.
+ *
+ * Deliberately carries no price/discount fields -- each sibling's own product
+ * page already computes its price correctly; duplicating that math here
+ * would just create a second place it could drift from effectivePrice().
+ */
+export interface ProductVariant {
+  id: string;
+  slug?: string;
+  name: string;
+  variantLabel?: string;
+  thumbnail?: string;
+  inStock: boolean;
+}
+
+/**
+ * Other colorways of the same product, when it belongs to a variant group.
+ *
+ * Never called for a product with no variantGroupId -- see ProductDetail.
+ * Always fresh (stock/availability shouldn't sit behind the catalog's usual
+ * cache window), and excludes the product itself, mirroring
+ * fetchRelatedProducts.
+ */
+export async function fetchProductVariants(
+  groupId: string,
+  excludeId: string
+): Promise<ProductVariant[]> {
+  const result = await getJSON<ProductVariant[]>(
+    `/api/v1/catalog/variants${toQueryString({ groupId })}`,
+    { revalidate: 0, label: `fetchProductVariants(${groupId})` }
+  );
+  return (result?.data ?? []).filter((v) => v.id !== excludeId);
+}
+
 // ── CMS ─────────────────────────────────────────────────────────────────────
 
 /** The admin-managed homepage content. Empty payload on failure. */

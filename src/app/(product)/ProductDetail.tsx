@@ -11,10 +11,14 @@ import {
   Text,
   type Crumb,
 } from "@/design-system";
-import { ProductGallery, ProductGrid } from "@/components/commerce";
+import { ProductGallery, ProductGrid, VariantPicker } from "@/components/commerce";
 import { presentSpecs } from "@/lib/specs";
 import { resolveProductImages } from "@/lib/media";
-import { fetchProductReviews, fetchRelatedProducts } from "@/lib/api/server";
+import {
+  fetchProductReviews,
+  fetchRelatedProducts,
+  fetchProductVariants,
+} from "@/lib/api/server";
 import type { Product } from "@/lib/api/types";
 import {
   enabledPolicyPanels,
@@ -76,9 +80,12 @@ function buildCrumbs(product: Product): Crumb[] {
 }
 
 export async function ProductDetail({ product, policies }: ProductDetailProps) {
-  const [reviewSummary, related] = await Promise.all([
+  const [reviewSummary, related, variants] = await Promise.all([
     fetchProductReviews(product.id),
     fetchRelatedProducts(product, 4),
+    product.variantGroupId
+      ? fetchProductVariants(product.variantGroupId, product.id)
+      : Promise.resolve([]),
   ]);
 
   const images = resolveProductImages(product);
@@ -123,6 +130,10 @@ export async function ProductDetail({ product, policies }: ProductDetailProps) {
                 <Text size="lead" tone="muted" className="mt-4">
                   {product.shortDescription}
                 </Text>
+              ) : null}
+
+              {variants.length > 0 ? (
+                <VariantPicker current={product} variants={variants} className="mb-1 mt-6" />
               ) : null}
 
               <Divider weight="hairline" className="my-7" />

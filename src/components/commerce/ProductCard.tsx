@@ -36,16 +36,8 @@ export interface ProductCardProps {
   className?: string;
 }
 
-/**
- * The product's canonical URL.
- *
- * Prefers the slug route, which only exists for records that have been through
- * the additive slug backfill. Records without one keep resolving by id, so an
- * unmigrated catalog still links correctly.
- */
-export function productHref(product: Product): string {
-  return product.slug ? `/product/${product.slug}` : `/product/id/${product.id}`;
-}
+import { productHref } from "@/lib/product-href";
+export { productHref };
 
 export function ProductCard({
   product,
