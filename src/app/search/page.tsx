@@ -25,7 +25,7 @@ import { fetchCollections, fetchProducts, isApiConfigured } from "@/lib/api/serv
  * themselves get crawled.
  */
 
-export const revalidate = 300;
+export const revalidate = 0;
 
 export async function generateMetadata({
   searchParams,

@@ -15,7 +15,7 @@ import { ProductDetail } from "../../(product)/ProductDetail";
  * exist yet.
  */
 
-export const revalidate = 300;
+export const revalidate = 0;
 
 export async function generateMetadata({
   params,

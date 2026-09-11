@@ -18,7 +18,7 @@ import { CatalogListing } from "../../(shop)/CatalogListing";
  * can't be a static next.config.ts rewrite).
  */
 
-export const revalidate = 300;
+export const revalidate = 0;
 
 export async function generateMetadata({
   params,

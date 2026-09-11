@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/collections" },
 };
 
-export const revalidate = 300;
+export const revalidate = 0;
 
 function slugify(value: string): string {
   return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");

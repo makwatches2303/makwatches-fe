@@ -14,7 +14,7 @@ import { ProductDetail } from "../../../(product)/ProductDetail";
  * page competing for the same content in search.
  */
 
-export const revalidate = 300;
+export const revalidate = 0;
 
 export async function generateMetadata({
   params,

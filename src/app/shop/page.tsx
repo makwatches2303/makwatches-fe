@@ -16,7 +16,7 @@ export const metadata: Metadata = {
   alternates: { canonical: "/shop" },
 };
 
-export const revalidate = 300;
+export const revalidate = 0;
 
 export default async function ShopPage({
   searchParams,

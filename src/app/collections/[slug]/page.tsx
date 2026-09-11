@@ -12,7 +12,7 @@ import { CatalogListing } from "../../(shop)/CatalogListing";
  * collection page with no collection behind it does not exist.
  */
 
-export const revalidate = 300;
+export const revalidate = 0;
 
 async function resolve(slug: string) {
   const collections = await fetchCollections();
