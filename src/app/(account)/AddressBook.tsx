@@ -111,10 +111,13 @@ export function AddressBook() {
         setPincodeNote(result.reason);
         return;
       }
+      // Not every carrier names the locality, so the place clause is dropped
+      // when absent rather than rendering "Delivering to ."
+      const place = [result.details.city, result.details.state]
+        .filter(Boolean)
+        .join(", ");
       setPincodeNote(
-        `Delivering to ${[result.details.city, result.details.state]
-          .filter(Boolean)
-          .join(", ")}.`
+        place ? `Delivering to ${place}.` : "We deliver to this pincode."
       );
       setDraft((current) => ({
         ...current,

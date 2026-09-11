@@ -1,6 +1,6 @@
 import { ArrowPathIcon } from "@heroicons/react/24/outline";
 import { COLORS } from "../colors";
-import type { Order, TrackingData } from "./types";
+import { carrierLabel, trackingNumberOf, type Order, type TrackingData } from "./types";
 
 export function OrderShippingTracking({
   order,
@@ -16,22 +16,28 @@ export function OrderShippingTracking({
   const info = order.shippingInfo;
   if (!info) return null;
 
+  // The carrier is read from the record rather than hardcoded: an order booked
+  // with Delhivery last year and one booked with Shiprocket today both render
+  // here, and each must say who is actually carrying it.
+  const carrier = carrierLabel(info);
+  const trackingNumber = trackingNumberOf(info);
+
   return (
     <div className="mt-4 rounded-lg border overflow-hidden" style={{ borderColor: `${COLORS.surfaceLight}80` }}>
       <div
         className="px-3 py-2 border-b flex items-center justify-between"
         style={{
-          backgroundColor: info.waybill ? `${COLORS.primary}10` : `${COLORS.error}10`,
+          backgroundColor: trackingNumber ? `${COLORS.primary}10` : `${COLORS.error}10`,
           borderColor: `${COLORS.surfaceLight}80`,
         }}
       >
         <div className="flex items-center space-x-2">
           <span className="text-base">🚚</span>
           <h4 className="text-sm font-medium" style={{ color: COLORS.text }}>
-            Delhivery Shipping
+            {carrier} Shipping
           </h4>
         </div>
-        {info.waybill && !tracking && (
+        {trackingNumber && !tracking && (
           <button
             onClick={onFetchTracking}
             disabled={trackingLoading}
@@ -54,14 +60,14 @@ export function OrderShippingTracking({
       </div>
 
       <div className="p-3 space-y-3">
-        {info.waybill ? (
+        {trackingNumber ? (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             <div className="p-2 rounded" style={{ backgroundColor: COLORS.surface }}>
               <p className="text-[10px] mb-0.5" style={{ color: COLORS.textMuted }}>
-                Waybill
+                Tracking No.
               </p>
               <p className="text-xs font-mono font-medium" style={{ color: COLORS.text }}>
-                {info.waybill}
+                {trackingNumber}
               </p>
             </div>
             <div className="p-2 rounded" style={{ backgroundColor: COLORS.surface }}>
@@ -164,7 +170,7 @@ export function OrderShippingTracking({
                 border: `1px solid ${COLORS.primary}`,
               }}
             >
-              Open Delhivery Tracking →
+              Open {carrier} Tracking →
             </a>
           </div>
         )}

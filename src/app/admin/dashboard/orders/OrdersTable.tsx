@@ -7,7 +7,7 @@ import {
 } from "@heroicons/react/24/outline";
 import { COLORS } from "../colors";
 import { formatCurrency, formatDate, getStatusColor } from "./format";
-import type { Order } from "./types";
+import { carrierLabel, trackingNumberOf, type Order } from "./types";
 
 export function OrdersTable({
   orders,
@@ -132,13 +132,13 @@ export function OrdersTable({
                     >
                       {order.status}
                     </span>
-                    {order.shippingInfo?.waybill ? (
+                    {trackingNumberOf(order.shippingInfo) ? (
                       <span
                         className="px-2 py-0.5 rounded text-[10px] inline-flex items-center gap-1"
                         style={{ backgroundColor: `${COLORS.success}15`, color: COLORS.success }}
-                        title={`AWB: ${order.shippingInfo.waybill}`}
+                        title={`${carrierLabel(order.shippingInfo)} AWB: ${trackingNumberOf(order.shippingInfo)}`}
                       >
-                        🚚 {order.shippingInfo.shipmentStatus?.replace(/_/g, " ") || "Shipped"}
+                        🚚 {order.shippingInfo?.shipmentStatus?.replace(/_/g, " ") || "Shipped"}
                       </span>
                     ) : order.shippingInfo?.shipmentError ? (
                       <span

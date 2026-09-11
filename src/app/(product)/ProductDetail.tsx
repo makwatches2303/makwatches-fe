@@ -144,7 +144,21 @@ export async function ProductDetail({ product, policies }: ProductDetailProps) {
               product.description !== product.shortDescription ? (
                 <>
                   <Divider weight="hairline" className="my-7" />
-                  <Text size="body" tone="muted" className="whitespace-pre-line">
+                  {/*
+                    break-words alongside whitespace-pre-line.
+
+                    pre-line preserves the newlines an admin typed, but it does
+                    not break a long unbroken token -- a spec string, a model
+                    number, a pasted URL. One such token in a description was
+                    enough to push the whole document into horizontal scroll on
+                    a phone, because the paragraph's min-content width became
+                    the token's width.
+                  */}
+                  <Text
+                    size="body"
+                    tone="muted"
+                    className="whitespace-pre-line break-words"
+                  >
                     {product.description}
                   </Text>
                 </>

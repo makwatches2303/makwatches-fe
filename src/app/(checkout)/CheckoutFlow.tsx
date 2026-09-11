@@ -31,15 +31,18 @@ import {
 import {
   checkPincode,
   createRazorpayIntent,
+  fetchShippingOptions,
   placeOrder,
   type PaymentMethod,
   type PincodeServiceability,
+  type ShippingOption,
   type PlacedOrder,
 } from "@/lib/api/checkout";
 import { describeAdjustments, syncCartToServer } from "@/lib/cart-sync";
 import { openRazorpay } from "@/lib/razorpay";
 
 import { CheckoutSummary } from "./CheckoutSummary";
+import { ShippingOptions } from "./ShippingOptions";
 import { OrderPlaced } from "./OrderPlaced";
 
 /**
@@ -72,6 +75,21 @@ const EMPTY_ADDRESS: AddressInput = {
   phone: "",
 };
 
+/**
+ * The delivery confirmation for a serviceable pincode.
+ *
+ * Not every carrier names the locality -- Shiprocket quotes couriers, not
+ * districts -- so the city/state clause is dropped when it is absent rather
+ * than rendering "Delivering to ." The fact that we deliver is the part worth
+ * saying either way.
+ */
+function deliveryHint(serviceability: PincodeServiceability): string {
+  const place = [serviceability.city, serviceability.state]
+    .filter(Boolean)
+    .join(", ");
+  return place ? `Delivering to ${place}.` : "We deliver to this pincode.";
+}
+
 export function CheckoutFlow() {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -97,6 +115,14 @@ export function CheckoutFlow() {
     useState<PincodeServiceability | null>(null);
   const [pincodeMessage, setPincodeMessage] = useState<string | null>(null);
   const [checkingPincode, setCheckingPincode] = useState(false);
+
+  // Delivery options are fetched per (pincode, payment mode), because the
+  // carrier prices COD differently and the server binds each quote to the mode
+  // it was issued for.
+  const [shippingOptions, setShippingOptions] = useState<ShippingOption[]>([]);
+  const [selectedShipping, setSelectedShipping] = useState<ShippingOption | null>(null);
+  const [loadingShipping, setLoadingShipping] = useState(false);
+  const [shippingError, setShippingError] = useState<string | null>(null);
 
   const [method, setMethod] = useState<PaymentMethod | null>(null);
   const [placing, setPlacing] = useState(false);
@@ -236,6 +262,59 @@ export function CheckoutFlow() {
     }
   };
 
+  /**
+   * Load the courier options for the current address and payment mode.
+   *
+   * Any previous selection is dropped first: a quote is bound to the mode and
+   * destination it was issued for, so keeping a stale one would only fail
+   * server-side at the last step.
+   */
+  const loadShippingOptions = useCallback(
+    async (pincode: string, cod: boolean) => {
+      setLoadingShipping(true);
+      setShippingError(null);
+      setSelectedShipping(null);
+      setShippingOptions([]);
+      try {
+        const result = await fetchShippingOptions(pincode.trim(), cod);
+        const options = result?.options ?? [];
+        setShippingOptions(options);
+        // Preselect the carrier's own recommendation, else the cheapest. The
+        // customer can change it; this only avoids an empty required field.
+        if (options.length > 0) {
+          const recommended = options.find((option) => option.recommended);
+          const cheapest = [...options].sort((a, b) => a.charge - b.charge)[0];
+          setSelectedShipping(recommended ?? cheapest);
+        }
+      } catch {
+        // Never fall back to a zero charge: that would ship at our expense and
+        // hide the failure. The customer is told, and can retry.
+        setShippingError(
+          "We could not load delivery options just now. Please try again."
+        );
+      } finally {
+        setLoadingShipping(false);
+      }
+    },
+    []
+  );
+
+  // Re-quote whenever the destination or the payment mode changes.
+  useEffect(() => {
+    if (step !== "payment" || !method) return;
+    const pincode = effectiveAddress?.zipCode?.trim();
+    if (!pincode || !/^\d{6}$/.test(pincode)) return;
+    void loadShippingOptions(pincode, method === "cod");
+    // effectiveAddress is derived each render; the pincode is what matters.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step, method, effectiveAddress?.zipCode, loadShippingOptions]);
+
+  const shippingCharge = selectedShipping?.charge ?? null;
+  const displayTotal =
+    serverTotal === null
+      ? null
+      : serverTotal + (shippingCharge ?? 0);
+
   function validate(address: AddressInput) {
     const next: Partial<Record<keyof AddressInput, string>> = {};
     if (!address.name.trim()) next.name = "Enter the recipient's name.";
@@ -309,6 +388,12 @@ export function CheckoutFlow() {
   // --- 3 & 4. Pay, then place -------------------------------------------
   async function submitOrder() {
     if (!effectiveAddress || !method) return;
+    // A delivery option is required: without one the server has no charge to
+    // verify, and shipping would silently be free.
+    if (!selectedShipping) {
+      setPlaceError("Please choose a delivery option.");
+      return;
+    }
 
     setPlacing(true);
     setPlaceError(null);
@@ -319,7 +404,13 @@ export function CheckoutFlow() {
       };
 
       if (method === "razorpay") {
-        const intent = await createRazorpayIntent();
+        // The intent must be raised for goods + delivery, or the amount
+        // captured would not match the order the server prices.
+        const intent = await createRazorpayIntent({
+          quote: selectedShipping.quote,
+          pincode: effectiveAddress.zipCode.trim(),
+          cod: false,
+        });
         const outcome = await openRazorpay({
           key: intent.key,
           amount: intent.amount,
@@ -359,7 +450,10 @@ export function CheckoutFlow() {
         customerName: effectiveAddress.name,
         customerEmail: user?.email,
         customerPhone: effectiveAddress.phone,
-        clientTotal: serverTotal ?? undefined,
+        clientTotal: displayTotal ?? undefined,
+        // Opaque: the server reads the courier and the charge out of this
+        // after re-verifying it. No amount is sent from here.
+        shippingQuote: selectedShipping.quote,
       });
 
       // Only now: the server holds the order, so the bag can go.
@@ -512,7 +606,7 @@ export function CheckoutFlow() {
                     checkingPincode
                       ? "Checking delivery…"
                       : serviceability
-                        ? `Delivering to ${[serviceability.city, serviceability.state].filter(Boolean).join(", ")}.`
+                        ? deliveryHint(serviceability)
                         : pincodeMessage ?? undefined
                   }
                 >
@@ -654,6 +748,23 @@ export function CheckoutFlow() {
               ]}
             />
 
+            <div className="mt-8">
+              <ShippingOptions
+                options={shippingOptions}
+                selectedQuote={selectedShipping?.quote ?? null}
+                onSelect={setSelectedShipping}
+                loading={loadingShipping}
+                error={shippingError}
+                onRetry={() => {
+                  const pincode = effectiveAddress?.zipCode?.trim();
+                  if (pincode && method) {
+                    void loadShippingOptions(pincode, method === "cod");
+                  }
+                }}
+                disabled={placing}
+              />
+            </div>
+
             {placeError ? (
               <p
                 role="alert"
@@ -668,13 +779,13 @@ export function CheckoutFlow() {
             <div className="flex flex-wrap items-center gap-4">
               <Button
                 onClick={() => void submitOrder()}
-                disabled={placing || !method}
+                disabled={placing || !method || !selectedShipping}
               >
                 {placing
                   ? "Placing your order…"
                   : method === "cod"
                     ? "Place order"
-                    : `Pay ${formatPrice(serverTotal ?? 0)}`}
+                    : `Pay ${formatPrice(displayTotal ?? 0)}`}
               </Button>
               <Button variant="ghost" onClick={() => setStep("address")}>
                 Back
@@ -692,6 +803,8 @@ export function CheckoutFlow() {
       <CheckoutSummary
         lines={lines}
         serverTotal={serverTotal}
+        shippingCharge={shippingCharge}
+        shippingLabel={selectedShipping?.courierName}
         className="lg:sticky lg:top-24 lg:self-start"
       />
     </div>

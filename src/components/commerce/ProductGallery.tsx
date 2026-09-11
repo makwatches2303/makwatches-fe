@@ -97,14 +97,22 @@ export function ProductGallery({
   // No media at all: one placeholder frame, no controls.
   if (count === 0) {
     return (
-      <div className={cn("border-2 border-mak-line", className)}>
+      <div className={cn("min-w-0 max-w-full border-2 border-mak-line", className)}>
         <ProductImage media={null} alt={productName} sizes={IMAGE_SIZES.half} />
       </div>
     );
   }
 
   return (
-    <div className={className}>
+    // min-w-0 is load-bearing, not defensive.
+    //
+    // The gallery is a grid item, and a grid item's automatic minimum size is
+    // its min-content width -- which the thumbnail strip below drives to
+    // (thumb count x 80px) + gaps. With six images that is 520px, so on a
+    // 390px phone the item refused to shrink and pushed 210px of horizontal
+    // scroll onto the whole document. Letting the item shrink puts the
+    // strip's own overflow-x-auto back in charge of the overflow.
+    <div className={cn("min-w-0 max-w-full", className)}>
       <div
         role="group"
         aria-roledescription="carousel"
@@ -172,7 +180,12 @@ export function ProductGallery({
         <div
           role="tablist"
           aria-label="Product images"
-          className="mt-3 flex gap-2 overflow-x-auto pb-1"
+          className={cn(
+            "mt-3 flex min-w-0 max-w-full gap-2 overflow-x-auto pb-1",
+            // Touch devices get momentum scrolling; the scrollbar itself is
+            // redundant beside the arrows and the active-thumb border.
+            "overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+          )}
         >
           {images.map((image, index) => (
             <button

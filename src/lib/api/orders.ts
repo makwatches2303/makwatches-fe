@@ -23,8 +23,14 @@ export interface OrderLine {
  * so rather than inventing a stage.
  */
 export interface ShippingInfo {
+  /** "shiprocket" | "delhivery". Absent on orders older than the field. */
   provider?: string;
+  /** Legacy tracking-number field; still written for every new shipment. */
   waybill?: string;
+  /** The current name for the same value. Prefer `trackingNumberOf`. */
+  trackingNumber?: string;
+  /** The courier actually carrying the parcel, e.g. "Delhivery Surface". */
+  courierName?: string;
   trackingUrl?: string;
   shipmentStatus?: string;
   expectedDelivery?: string;
@@ -35,6 +41,36 @@ export interface ShippingInfo {
   /** Set when the carrier refused the shipment. Shown to the customer as a
    *  neutral "not dispatched yet", never as raw carrier text. */
   shipmentError?: string;
+}
+
+/**
+ * The tracking number for a shipment.
+ *
+ * Reads the modern field first and falls back to the legacy one, because every
+ * order booked before the Shiprocket integration carries only `waybill`.
+ */
+export function trackingNumberOf(shipping?: ShippingInfo | null): string {
+  return shipping?.trackingNumber || shipping?.waybill || "";
+}
+
+/**
+ * What to call the carrier in front of a customer.
+ *
+ * The courier's own name is the most useful thing to show; the provider slug
+ * is a fallback, prettified rather than printed raw.
+ */
+export function carrierNameOf(shipping?: ShippingInfo | null): string {
+  if (shipping?.courierName) return shipping.courierName;
+  switch (shipping?.provider) {
+    case "shiprocket":
+      return "Shiprocket";
+    case "delhivery":
+      return "Delhivery";
+    default:
+      // An order with no provider recorded predates the field, and only
+      // Delhivery existed then.
+      return "Delhivery";
+  }
 }
 
 /** The full order, as the API returns it. */

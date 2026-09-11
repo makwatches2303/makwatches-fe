@@ -1,5 +1,6 @@
 "use client";
 
+import { cn } from "@/lib/utils";
 import { Divider, Text, formatPrice } from "@/design-system";
 import { ProductImage } from "@/components/commerce";
 import type { CartLine } from "@/store/cart";
@@ -12,32 +13,49 @@ import type { CartLine } from "@/store/cart";
  * the server is right, and the difference is what the adjustment notice
  * upstream is there to explain.
  *
- * Deliberately silent about shipping and tax. Neither is configured in this
- * system yet, and printing "Free" or "₹0" would be a claim we have not earned.
+ * Shipping is shown once the customer has chosen a courier, and not before:
+ * until then there is no charge to state, and printing "Free" or "₹0" would be
+ * a claim we have not earned. Tax is still not configured in this system, so
+ * it stays absent rather than being shown as zero.
  */
 
 export interface CheckoutSummaryProps {
   lines: CartLine[];
-  /** The server-priced total. Falls back to the bag's own sum when unsynced. */
+  /** The server-priced goods total. Falls back to the bag's own sum when unsynced. */
   serverTotal: number | null;
+  /** The chosen delivery charge, or null while no courier is selected. */
+  shippingCharge?: number | null;
+  /** The chosen courier's name, shown beside the charge. */
+  shippingLabel?: string;
   className?: string;
 }
 
 export function CheckoutSummary({
   lines,
   serverTotal,
+  shippingCharge = null,
+  shippingLabel,
   className,
 }: CheckoutSummaryProps) {
   const localTotal = lines.reduce(
     (sum, line) => sum + line.price * line.quantity,
     0
   );
-  const total = serverTotal ?? localTotal;
+  const subtotal = serverTotal ?? localTotal;
+  const total = subtotal + (shippingCharge ?? 0);
   const count = lines.reduce((sum, line) => sum + line.quantity, 0);
 
   return (
+    // min-w-0 is load-bearing.
+    //
+    // This is a grid item, and a grid item's automatic minimum size is its
+    // min-content width. The product name below is `truncate`, i.e.
+    // white-space: nowrap, so its min-content width is the *whole* untruncated
+    // title -- which pushed this panel to 543px and put 173px of horizontal
+    // scroll on the checkout page at 390px. Letting the item shrink is what
+    // allows truncate to actually truncate instead of forcing width.
     <aside
-      className={className}
+      className={cn("min-w-0", className)}
       aria-label="Order summary"
     >
       <div className="border-2 border-mak-line bg-mak-surface p-6">
@@ -49,7 +67,7 @@ export function CheckoutSummary({
           {lines.map((line) => (
             <li
               key={line.size ? `${line.productId}::${line.size}` : line.productId}
-              className="flex gap-3.5"
+              className="flex min-w-0 gap-3.5"
             >
               <div className="relative size-16 shrink-0 border-2 border-mak-divider bg-mak-bg">
                 <ProductImage
@@ -94,19 +112,33 @@ export function CheckoutSummary({
             <dt className="text-mak-small text-mak-muted">
               Subtotal ({count} {count === 1 ? "piece" : "pieces"})
             </dt>
-            <dd className="text-mak-small text-mak-ink">
-              {formatPrice(total)}
+            <dd className="text-mak-small tabular-nums text-mak-ink">
+              {formatPrice(subtotal)}
             </dd>
           </div>
-          <div className="flex items-baseline justify-between">
-            <dt className="text-mak-small text-mak-muted">Delivery</dt>
+          <div className="flex items-baseline justify-between gap-3">
+            <dt className="min-w-0 text-mak-small text-mak-muted">
+              Delivery
+              {shippingLabel ? (
+                <span className="block truncate text-mak-label text-mak-ink-subtle">
+                  {shippingLabel}
+                </span>
+              ) : null}
+            </dt>
             {/*
-              Not "Free". No shipping rate is configured, so the honest answer
-              is that it is confirmed with the order, not a number invented here.
+              A number only once the customer has chosen a courier. Before
+              that the honest answer is that it is not decided yet -- "Free"
+              or "₹0" would be a claim we have not earned.
             */}
-            <dd className="text-mak-small text-mak-muted">
-              Confirmed on dispatch
-            </dd>
+            {shippingCharge === null ? (
+              <dd className="shrink-0 text-mak-small text-mak-muted">
+                Chosen at payment
+              </dd>
+            ) : (
+              <dd className="shrink-0 text-mak-small tabular-nums text-mak-ink">
+                {shippingCharge > 0 ? formatPrice(shippingCharge) : "Free"}
+              </dd>
+            )}
           </div>
         </dl>
 

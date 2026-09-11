@@ -61,7 +61,11 @@ export function useOrders() {
 
     setTrackingLoading((prev) => ({ ...prev, [orderId]: true }));
     try {
-      const res = await api.get(`/shipping/track/${orderId}`);
+      // `/shipping/track/:waybill` is the public track-by-tracking-number
+      // route; passing an order id to it never matched, so admin tracking was
+      // silently broken. The per-order route is the one that takes an order id,
+      // and it is the same service call the customer view uses.
+      const res = await api.get(`/shipping/track/order/${orderId}`);
       if (res.data.success) {
         setTrackingData((prev) => ({ ...prev, [orderId]: res.data.data }));
       }

@@ -9,20 +9,50 @@
 import { ApiError, apiClient, http } from "./client";
 import type { Address } from "./addresses";
 
+/** One normalized delivery option, priced by the carrier. */
+export interface ShippingOption {
+  id: string;
+  provider: string;
+  providerCourierId: string;
+  courierName: string;
+  charge: number;
+  /** Absent when the carrier gave no estimate. Never inferred. */
+  estimatedDeliveryDays?: number;
+  etd?: string;
+  codAvailable: boolean;
+  mode?: string;
+  /** Set only when the carrier itself nominated this option. */
+  recommended?: boolean;
+  /**
+   * Opaque signed quote. Echo it back verbatim when placing the order; the
+   * server re-verifies it against the destination and parcel before honouring
+   * the charge, so an edited value is rejected rather than applied.
+   */
+  quote: string;
+}
+
 /**
  * What the carrier says about a destination pincode.
  *
- * `cod` and `prepaid` come from Delhivery, not from us. A payment method is
- * offered only where the carrier actually supports it; nothing here is assumed
- * on the carrier's behalf.
+ * `cod` and `prepaid` come from the carrier, not from us: a payment method is
+ * offered only where a courier actually carries it. Nothing here is assumed on
+ * the carrier's behalf.
+ *
+ * `city`, `district` and `state` are optional because not every carrier
+ * reports them -- Shiprocket's serviceability response names couriers, not
+ * localities, so they are absent rather than guessed.
  */
 export interface PincodeServiceability {
   pincode: string;
-  city: string;
-  district: string;
-  state: string;
+  city?: string;
+  district?: string;
+  state?: string;
   cod: boolean;
   prepaid: boolean;
+  /** Which carrier answered. */
+  provider?: string;
+  /** The delivery choices, each with its signed quote. */
+  options?: ShippingOption[];
   /** Reachable, but outside the standard delivery area. */
   reachable_oda?: boolean;
   remarks?: string;
@@ -57,6 +87,42 @@ export async function checkPincode(pincode: string): Promise<PincodeResult> {
   }
 }
 
+/** The delivery options for the signed-in customer's own cart. */
+export interface CheckoutShippingOptions {
+  pincode: string;
+  provider: string;
+  cod: boolean;
+  prepaid: boolean;
+  options: ShippingOption[];
+}
+
+/**
+ * Ask which couriers can deliver this customer's bag to a pincode.
+ *
+ * Distinct from `checkPincode`, which is a public "do you deliver here"
+ * probe. The quotes returned here are bound server-side to this customer,
+ * this bag, this destination and this payment mode -- only such a quote can
+ * price an order, so this is the call checkout must use.
+ *
+ * An unserviceable pincode resolves to null rather than throwing: it is a
+ * normal answer. A transport or carrier failure still throws, because "we
+ * could not ask" must not be shown as "we do not deliver to you".
+ */
+export async function fetchShippingOptions(
+  pincode: string,
+  cod: boolean
+): Promise<CheckoutShippingOptions | null> {
+  try {
+    return await http.post<CheckoutShippingOptions>(
+      "/api/v1/checkout/shipping-options",
+      { pincode, cod }
+    );
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 404) return null;
+    throw error;
+  }
+}
+
 /** What Razorpay's checkout widget needs to open, all issued by our server. */
 export interface RazorpayIntent {
   /** The publishable key. Never read from a NEXT_PUBLIC_ variable: the server
@@ -78,12 +144,30 @@ interface RazorpayOrderEnvelope {
 /**
  * Create the Razorpay order.
  *
- * The amount is computed by the server from the stored cart; nothing about the
- * price is sent from here, so a tampered client cannot pay less than the cart
- * is worth.
+ * The amount is computed by the server from the stored cart plus the delivery
+ * charge read out of the signed quote; no price is sent from here, so a
+ * tampered client cannot pay less than the order is worth.
  */
-export async function createRazorpayIntent(): Promise<RazorpayIntent> {
-  const res = await apiClient().post("/payments/razorpay/order");
+export async function createRazorpayIntent(
+  shipping?: { quote: string; pincode: string; cod: boolean }
+): Promise<RazorpayIntent> {
+  // The selected delivery quote goes with the request so the intent is raised
+  // for subtotal + shipping. The server re-verifies the quote and does the
+  // arithmetic itself; this only tells it which option was chosen.
+  //
+  // Sent through apiClient() rather than the http helper because the response
+  // is read defensively below: the gateway envelope has carried the order id
+  // at several different paths, and http.post would unwrap to one shape.
+  const res = await apiClient().post(
+    "/payments/razorpay/order",
+    shipping
+      ? {
+          shippingQuote: shipping.quote,
+          pincode: shipping.pincode,
+          cod: shipping.cod,
+        }
+      : undefined
+  );
   const body = res.data;
 
   // Extract key, amount, currency, and orderId defensively from root or unwrapped data
@@ -146,6 +230,14 @@ export interface PlaceOrderInput {
    * quietly charge a different amount than the one displayed.
    */
   clientTotal?: number;
+  /**
+   * The opaque signed quote for the chosen delivery option.
+   *
+   * Echoed back verbatim from `fetchShippingOptions`. No shipping amount is
+   * sent: the server reads the charge out of this token after re-verifying it
+   * against this customer, bag, destination and payment mode.
+   */
+  shippingQuote?: string;
 }
 
 export interface PlacedOrderItem {
@@ -163,7 +255,20 @@ export interface PlacedOrder {
   id: string;
   orderNumber: string;
   items: PlacedOrderItem[];
+  /** The amount charged: subtotal + shippingCharge. */
   total: number;
+  /** The goods total, before delivery. Absent on pre-shipping orders. */
+  subtotal?: number;
+  shippingCharge?: number;
+  /** The delivery option as quoted at purchase time. */
+  shippingOption?: {
+    provider?: string;
+    providerCourierId?: string;
+    courierName?: string;
+    charge: number;
+    estimatedDeliveryDays?: number;
+    etd?: string;
+  };
   status: string;
   paymentStatus: string;
   shippingAddress: Address;

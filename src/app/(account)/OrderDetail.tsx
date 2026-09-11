@@ -18,10 +18,12 @@ import { formatAddress } from "@/lib/api/addresses";
 import {
   ORDER_STAGES,
   cancelOrder,
+  carrierNameOf,
   getOrder,
   isCancellable,
   orderStageIndex,
   trackOrder,
+  trackingNumberOf,
   type Order,
   type ShippingInfo,
 } from "@/lib/api/orders";
@@ -186,15 +188,15 @@ export function OrderDetail({ orderId }: { orderId: string }) {
               We could not reach the carrier for an update just now. Your order
               is unaffected.
             </Text>
-          ) : !shipping?.waybill ? (
+          ) : !shipping || !trackingNumberOf(shipping) ? (
             <Text size="small" tone="muted">
               Not dispatched yet. Tracking appears here once the parcel is
               handed to the carrier.
             </Text>
           ) : (
             <dl className="flex flex-col gap-3">
-              <Row label="Carrier" value={shipping.provider || "Delhivery"} />
-              <Row label="Waybill" value={shipping.waybill} />
+              <Row label="Carrier" value={carrierNameOf(shipping)} />
+              <Row label="Tracking no." value={trackingNumberOf(shipping)} />
               {shipping.shipmentStatus ? (
                 <Row label="Status" value={shipping.shipmentStatus} />
               ) : null}

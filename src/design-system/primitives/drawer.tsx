@@ -82,7 +82,15 @@ export function Drawer({
         inert={!open}
         tabIndex={-1}
         className={cn(
-          "fixed inset-y-0 z-100 flex w-full max-w-[430px] flex-col bg-mak-bg",
+          // h-[100dvh] rather than inset-y-0.
+          //
+          // inset-y-0 sizes to the *layout* viewport, which on mobile stays
+          // tall while the browser's URL bar is on screen -- so the bottom of
+          // the panel, and with it the pinned footer and its primary action,
+          // sits behind the browser chrome and cannot be reached. The dynamic
+          // viewport unit tracks what is actually visible. On desktop dvh and
+          // vh are identical, so nothing changes there.
+          "fixed top-0 z-100 h-[100dvh] flex w-full max-w-[430px] flex-col bg-mak-bg",
           "transition-transform duration-[450ms] ease-mak",
           side === "right"
             ? "right-0 border-l-2 border-mak-line"
@@ -115,7 +123,14 @@ export function Drawer({
         </div>
 
         {footer ? (
-          <div className="shrink-0 border-t-2 border-mak-line px-6 py-5">
+          // The safe-area inset keeps the primary action clear of the iOS home
+          // indicator, which otherwise overlaps the bottom of the panel.
+          <div
+            className={cn(
+              "shrink-0 border-t-2 border-mak-line px-6 py-5",
+              "pb-[max(1.25rem,env(safe-area-inset-bottom))]"
+            )}
+          >
             {footer}
           </div>
         ) : null}
