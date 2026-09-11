@@ -11,6 +11,7 @@ import { fetchStorefront } from "@/lib/api/server";
 import { FALLBACK_STOREFRONT } from "@/lib/api/storefront";
 import PageTransition from "@/components/page-transition";
 import LenisProvider from "@/components/lenis-provider";
+import { MarketingProviders } from "@/components/marketing/MarketingProviders";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://makwatches.in"),
@@ -183,6 +184,9 @@ export default async function RootLayout({
           */}
           <ToastProvider>
             <AuthProvider>
+              {/* Marketing popup & cart recovery tracker */}
+              <MarketingProviders />
+
               {/* NavGuard will hide Navbar on /login */}
               <NavGuard navigation={storefront.navigation} />
 
