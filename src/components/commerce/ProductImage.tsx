@@ -48,7 +48,7 @@ export function ProductImage({
   sizes = IMAGE_SIZES.productGrid,
   ratio = "square",
   priority = false,
-  grayscale = true,
+  grayscale = false,
   hoverZoom = false,
   className,
   imageClassName,
@@ -63,7 +63,7 @@ export function ProductImage({
   return (
     <div
       className={cn(
-        "relative overflow-hidden bg-mak-surface",
+        "relative overflow-hidden bg-white",
         RATIO[ratio],
         className
       )}

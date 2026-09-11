@@ -72,7 +72,7 @@ export function ProductCard({
       // min-w-0: a grid item defaults to min-width:auto, so a long unbroken
       // token in a product name ("…Men-FV30014YM01W") would widen the column
       // and push the whole grid past the viewport.
-      className={cn("group relative flex min-w-0 flex-col bg-mak-bg", className)}
+      className={cn("group relative flex min-w-0 flex-col bg-white", className)}
     >
       <div className="relative">
         {/*
@@ -107,7 +107,7 @@ export function ProductCard({
         />
 
         {soldOut ? (
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-mak-bg/70">
+          <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-white/70">
             <Badge tone="ink">Sold out</Badge>
           </div>
         ) : null}
@@ -129,7 +129,7 @@ export function ProductCard({
               type="button"
               onClick={() => openQuickView(product.id)}
               className={cn(
-                "min-h-11 flex-1 border-t-2 border-mak-line bg-mak-bg px-3 py-3",
+                "min-h-11 flex-1 border-t-2 border-mak-line bg-white px-3 py-3",
                 "font-display text-mak-micro font-extrabold uppercase tracking-[0.06em] text-mak-ink",
                 "transition-colors duration-200 ease-mak hover:bg-mak-surface",
                 "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-mak-accent"

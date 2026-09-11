@@ -152,12 +152,12 @@
   }
 
   .mak-rule-grid > * {
-    background-color: var(--color-mak-bg);
+    background-color: #ffffff;
   }
 
-  /* Photography prints in black and white, per the reference. */
+  /* Full color product imagery (no grayout). */
   .mak-grayscale {
-    filter: grayscale(1) contrast(1.08);
+    filter: none;
   }
 }
 

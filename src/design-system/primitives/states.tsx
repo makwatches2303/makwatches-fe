@@ -50,7 +50,7 @@ export function Skeleton({
 /** A product card skeleton, matching ProductCard's geometry exactly. */
 export function ProductCardSkeleton() {
   return (
-    <div className="flex flex-col bg-mak-bg">
+    <div className="flex flex-col bg-white">
       <Skeleton variant="image" />
       <div className="flex flex-col gap-2 p-4 pb-5">
         <Skeleton variant="text" className="h-5 w-3/4" />
