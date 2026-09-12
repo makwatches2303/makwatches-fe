@@ -18,7 +18,7 @@ import {
   useToast,
 } from "@/design-system";
 import { useAuth } from "@/context/AuthContext";
-import { useCartStore } from "@/store/cart";
+import { selectAppliedCoupon, useCartStore } from "@/store/cart";
 import { ApiError } from "@/lib/api/client";
 import {
   createAddress,
@@ -96,6 +96,7 @@ export function CheckoutFlow() {
 
   const hydrated = useCartStore((state) => state.hydrated);
   const lines = useCartStore((state) => state.lines);
+  const appliedCoupon = useCartStore(selectAppliedCoupon);
   const replaceAll = useCartStore((state) => state.replaceAll);
   const clearCart = useCartStore((state) => state.clear);
 
@@ -310,10 +311,11 @@ export function CheckoutFlow() {
   }, [step, method, effectiveAddress?.zipCode, loadShippingOptions]);
 
   const shippingCharge = selectedShipping?.charge ?? null;
+  const discountAmount = appliedCoupon?.discountAmount ?? 0;
   const displayTotal =
     serverTotal === null
       ? null
-      : serverTotal + (shippingCharge ?? 0);
+      : Math.max(0, serverTotal - discountAmount) + (shippingCharge ?? 0);
 
   function validate(address: AddressInput) {
     const next: Partial<Record<keyof AddressInput, string>> = {};
@@ -406,11 +408,14 @@ export function CheckoutFlow() {
       if (method === "razorpay") {
         // The intent must be raised for goods + delivery, or the amount
         // captured would not match the order the server prices.
-        const intent = await createRazorpayIntent({
-          quote: selectedShipping.quote,
-          pincode: effectiveAddress.zipCode.trim(),
-          cod: false,
-        });
+        const intent = await createRazorpayIntent(
+          {
+            quote: selectedShipping.quote,
+            pincode: effectiveAddress.zipCode.trim(),
+            cod: false,
+          },
+          appliedCoupon?.code
+        );
         const outcome = await openRazorpay({
           key: intent.key,
           amount: intent.amount,
@@ -450,6 +455,7 @@ export function CheckoutFlow() {
         customerName: effectiveAddress.name,
         customerEmail: user?.email,
         customerPhone: effectiveAddress.phone,
+        couponCode: appliedCoupon?.code,
         clientTotal: displayTotal ?? undefined,
         // Opaque: the server reads the courier and the charge out of this
         // after re-verifying it. No amount is sent from here.

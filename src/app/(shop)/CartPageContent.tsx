@@ -8,8 +8,9 @@ import {
   Text,
   formatPrice,
 } from "@/design-system";
-import { CartLineItem } from "@/components/commerce";
+import { CartLineItem, PromoCodeBox } from "@/components/commerce";
 import {
+  selectAppliedCoupon,
   selectCartCount,
   selectCartSubtotal,
   useCartStore,
@@ -32,7 +33,11 @@ export function CartPageContent() {
   const lines = useCartStore((state) => state.lines);
   const count = useCartStore(selectCartCount);
   const subtotal = useCartStore(selectCartSubtotal);
+  const appliedCoupon = useCartStore(selectAppliedCoupon);
   const clear = useCartStore((state) => state.clear);
+
+  const discount = appliedCoupon?.discountAmount ?? 0;
+  const total = Math.max(0, subtotal - discount);
 
   if (!hydrated) {
     return <LoadingState label="Loading your bag" />;
@@ -78,11 +83,21 @@ export function CartPageContent() {
               Order summary
             </Text>
 
+            <div className="mb-4">
+              <PromoCodeBox subtotal={subtotal} />
+            </div>
+
             <dl className="flex flex-col gap-2">
               <div className="flex justify-between text-mak-small text-mak-muted">
                 <dt>Subtotal</dt>
                 <dd>{formatPrice(subtotal)}</dd>
               </div>
+              {appliedCoupon && (
+                <div className="flex justify-between text-mak-small text-emerald-600 font-medium">
+                  <dt>Discount ({appliedCoupon.code})</dt>
+                  <dd>-{formatPrice(appliedCoupon.discountAmount)}</dd>
+                </div>
+              )}
               <div className="flex justify-between text-mak-small text-mak-muted">
                 <dt>Shipping</dt>
                 {/*
@@ -101,7 +116,7 @@ export function CartPageContent() {
                 Total
               </span>
               <span className="font-display text-2xl font-extrabold tracking-[-0.01em] text-mak-ink">
-                {formatPrice(subtotal)}
+                {formatPrice(total)}
               </span>
             </div>
 

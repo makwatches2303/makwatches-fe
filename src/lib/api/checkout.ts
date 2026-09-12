@@ -149,24 +149,25 @@ interface RazorpayOrderEnvelope {
  * tampered client cannot pay less than the order is worth.
  */
 export async function createRazorpayIntent(
-  shipping?: { quote: string; pincode: string; cod: boolean }
+  shipping?: { quote: string; pincode: string; cod: boolean },
+  couponCode?: string
 ): Promise<RazorpayIntent> {
   // The selected delivery quote goes with the request so the intent is raised
-  // for subtotal + shipping. The server re-verifies the quote and does the
+  // for subtotal + shipping (- discount). The server re-verifies the quote and does the
   // arithmetic itself; this only tells it which option was chosen.
-  //
-  // Sent through apiClient() rather than the http helper because the response
-  // is read defensively below: the gateway envelope has carried the order id
-  // at several different paths, and http.post would unwrap to one shape.
+  const payload: Record<string, unknown> = {};
+  if (shipping) {
+    payload.shippingQuote = shipping.quote;
+    payload.pincode = shipping.pincode;
+    payload.cod = shipping.cod;
+  }
+  if (couponCode) {
+    payload.couponCode = couponCode;
+  }
+
   const res = await apiClient().post(
     "/payments/razorpay/order",
-    shipping
-      ? {
-          shippingQuote: shipping.quote,
-          pincode: shipping.pincode,
-          cod: shipping.cod,
-        }
-      : undefined
+    Object.keys(payload).length > 0 ? payload : undefined
   );
   const body = res.data;
 
@@ -224,6 +225,7 @@ export interface PlaceOrderInput {
   customerName?: string;
   customerEmail?: string;
   customerPhone?: string;
+  couponCode?: string;
   /**
    * What the client believes the total is. The server recomputes it and rejects
    * the order if they differ by more than rounding, so a stale page cannot
@@ -255,11 +257,13 @@ export interface PlacedOrder {
   id: string;
   orderNumber: string;
   items: PlacedOrderItem[];
-  /** The amount charged: subtotal + shippingCharge. */
+  /** The amount charged: subtotal + shippingCharge - discountAmount. */
   total: number;
   /** The goods total, before delivery. Absent on pre-shipping orders. */
   subtotal?: number;
   shippingCharge?: number;
+  couponCode?: string;
+  discountAmount?: number;
   /** The delivery option as quoted at purchase time. */
   shippingOption?: {
     provider?: string;
@@ -283,4 +287,29 @@ export interface PlacedOrder {
  */
 export function placeOrder(input: PlaceOrderInput): Promise<PlacedOrder> {
   return http.post<PlacedOrder>("/checkout", input);
+}
+
+export interface ValidateCouponInput {
+  code: string;
+  subtotal: number;
+  userId?: string;
+  email?: string;
+}
+
+export interface CouponValidationResult {
+  valid: boolean;
+  code: string;
+  description?: string;
+  discountType: "percentage" | "fixed";
+  discountValue: number;
+  discountAmount: number;
+  finalTotal: number;
+  message: string;
+}
+
+/**
+ * Validate a promotional coupon code against a subtotal.
+ */
+export function validateCoupon(input: ValidateCouponInput): Promise<CouponValidationResult> {
+  return http.post<CouponValidationResult>("/api/v1/coupons/validate", input);
 }

@@ -44,8 +44,17 @@ function lineKey(productId: string, size?: string): string {
   return size ? `${productId}::${size}` : productId;
 }
 
+export interface AppliedCoupon {
+  code: string;
+  description?: string;
+  discountType: "percentage" | "fixed";
+  discountValue: number;
+  discountAmount: number;
+}
+
 interface CartState {
   lines: CartLine[];
+  appliedCoupon: AppliedCoupon | null;
   /** True once the persisted cart has been read, so the UI can avoid a flash. */
   hydrated: boolean;
 
@@ -54,6 +63,8 @@ interface CartState {
   setQuantity: (productId: string, quantity: number, size?: string) => void;
   increment: (productId: string, size?: string) => void;
   decrement: (productId: string, size?: string) => void;
+  applyCoupon: (coupon: AppliedCoupon) => void;
+  removeCoupon: () => void;
   clear: () => void;
 
   /**
@@ -84,6 +95,7 @@ export const useCartStore = create<CartState>()(
   persist(
     (set) => ({
       lines: [],
+      appliedCoupon: null,
       hydrated: false,
 
       addLine: (product, quantity = 1, size) =>
@@ -170,15 +182,19 @@ export const useCartStore = create<CartState>()(
           };
         }),
 
-      clear: () => set({ lines: [] }),
+      applyCoupon: (coupon) => set({ appliedCoupon: coupon }),
+
+      removeCoupon: () => set({ appliedCoupon: null }),
+
+      clear: () => set({ lines: [], appliedCoupon: null }),
 
       replaceAll: (lines) => set({ lines }),
     }),
     {
       name: "mak-cart",
       storage: createJSONStorage(() => localStorage),
-      // Only the lines are persisted; `hydrated` is runtime state.
-      partialize: (state) => ({ lines: state.lines }),
+      // Persist lines and applied coupon across reloads
+      partialize: (state) => ({ lines: state.lines, appliedCoupon: state.appliedCoupon }),
       onRehydrateStorage: () => (state) => {
         if (state) state.hydrated = true;
       },
@@ -196,6 +212,17 @@ export const selectCartCount = (state: CartState): number =>
 
 export const selectCartSubtotal = (state: CartState): number =>
   state.lines.reduce((total, line) => total + line.price * line.quantity, 0);
+
+export const selectAppliedCoupon = (state: CartState) => state.appliedCoupon;
+
+export const selectCartDiscount = (state: CartState): number =>
+  state.appliedCoupon?.discountAmount ?? 0;
+
+export const selectCartTotal = (state: CartState): number => {
+  const subtotal = selectCartSubtotal(state);
+  const discount = selectCartDiscount(state);
+  return Math.max(0, subtotal - discount);
+};
 
 export const selectCartIsEmpty = (state: CartState): boolean =>
   state.lines.length === 0;

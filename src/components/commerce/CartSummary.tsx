@@ -2,37 +2,46 @@
 
 import { cn } from "@/lib/utils";
 import { ButtonLink, Divider, formatPrice } from "@/design-system";
-
-/**
- * Cart totals and the checkout call to action.
- *
- * Shipping is shown as "Calculated at checkout" rather than as a number.
- * Quoting a shipping cost here would be a claim the storefront cannot yet
- * substantiate -- rates come from Delhivery against a real pincode, and the
- * free-shipping threshold is a commercial decision that has not been set.
- */
+import { selectAppliedCoupon, useCartStore } from "@/store/cart";
+import { PromoCodeBox } from "./PromoCodeBox";
 
 export interface CartSummaryProps {
   subtotal: number;
   /** Set once a real shipping rate is available. */
   shipping?: number | null;
+  showPromoInput?: boolean;
   className?: string;
 }
 
 export function CartSummary({
   subtotal,
   shipping = null,
+  showPromoInput = true,
   className,
 }: CartSummaryProps) {
-  const total = subtotal + (shipping ?? 0);
+  const appliedCoupon = useCartStore(selectAppliedCoupon);
+  const discount = appliedCoupon?.discountAmount ?? 0;
+  const total = Math.max(0, subtotal - discount) + (shipping ?? 0);
 
   return (
     <div className={cn(className)}>
+      {showPromoInput && (
+        <div className="mb-3.5">
+          <PromoCodeBox subtotal={subtotal} />
+        </div>
+      )}
+
       <dl className="flex flex-col gap-1.5">
         <div className="flex justify-between text-mak-small text-mak-muted">
           <dt>Subtotal</dt>
           <dd>{formatPrice(subtotal)}</dd>
         </div>
+        {appliedCoupon && (
+          <div className="flex justify-between text-mak-small text-emerald-600 font-medium">
+            <dt>Discount ({appliedCoupon.code})</dt>
+            <dd>-{formatPrice(appliedCoupon.discountAmount)}</dd>
+          </div>
+        )}
         <div className="flex justify-between text-mak-small text-mak-muted">
           <dt>Shipping</dt>
           <dd>

@@ -2,8 +2,8 @@
 
 import { cn } from "@/lib/utils";
 import { Divider, Text, formatPrice } from "@/design-system";
-import { ProductImage } from "@/components/commerce";
-import type { CartLine } from "@/store/cart";
+import { ProductImage, PromoCodeBox } from "@/components/commerce";
+import { selectAppliedCoupon, useCartStore, type CartLine } from "@/store/cart";
 
 /**
  * The order summary rail.
@@ -37,12 +37,14 @@ export function CheckoutSummary({
   shippingLabel,
   className,
 }: CheckoutSummaryProps) {
+  const appliedCoupon = useCartStore(selectAppliedCoupon);
   const localTotal = lines.reduce(
     (sum, line) => sum + line.price * line.quantity,
     0
   );
   const subtotal = serverTotal ?? localTotal;
-  const total = subtotal + (shippingCharge ?? 0);
+  const discount = appliedCoupon?.discountAmount ?? 0;
+  const total = Math.max(0, subtotal - discount) + (shippingCharge ?? 0);
   const count = lines.reduce((sum, line) => sum + line.quantity, 0);
 
   return (
@@ -107,6 +109,10 @@ export function CheckoutSummary({
 
         <Divider weight="hairline" className="my-5" />
 
+        <div className="mb-5">
+          <PromoCodeBox subtotal={subtotal} />
+        </div>
+
         <dl className="flex flex-col gap-2.5">
           <div className="flex items-baseline justify-between">
             <dt className="text-mak-small text-mak-muted">
@@ -116,6 +122,16 @@ export function CheckoutSummary({
               {formatPrice(subtotal)}
             </dd>
           </div>
+          {appliedCoupon && (
+            <div className="flex items-baseline justify-between text-emerald-600 font-medium">
+              <dt className="text-mak-small">
+                Discount ({appliedCoupon.code})
+              </dt>
+              <dd className="text-mak-small tabular-nums">
+                -{formatPrice(appliedCoupon.discountAmount)}
+              </dd>
+            </div>
+          )}
           <div className="flex items-baseline justify-between gap-3">
             <dt className="min-w-0 text-mak-small text-mak-muted">
               Delivery

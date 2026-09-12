@@ -38,6 +38,7 @@ export {
 export { CartDrawer } from "./CartDrawer";
 export { CartLineItem, type CartLineItemProps } from "./CartLineItem";
 export { CartSummary, type CartSummaryProps } from "./CartSummary";
+export { PromoCodeBox } from "./PromoCodeBox";
 
 export {
   ShopControls,
