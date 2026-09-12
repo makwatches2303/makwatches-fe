@@ -57,7 +57,6 @@ export function isRebuiltRoute(pathname: string): boolean {
 export function isChromelessRoute(pathname: string): boolean {
   return (
     pathname.startsWith("/login") ||
-    pathname.startsWith("/admin") ||
     pathname.startsWith("/design-system")
   );
 }

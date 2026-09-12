@@ -229,12 +229,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         // the homepage, with their bag still in front of them.
         router.replace(safeRedirectTarget() ?? "/");
       } else {
-        router.replace("/admin/dashboard");
+        // Admin has its own separate app now; this storefront has no admin
+        // area of its own to send them to.
+        router.replace("/");
       }
       if (process.env.NODE_ENV !== "production") {
-        console.log(
-          `Redirected to ${userRole === "customer" ? "/" : "/admin/dashboard"}`
-        );
+        console.log(`Redirected to ${userRole === "customer" ? safeRedirectTarget() ?? "/" : "/"}`);
       }
     } catch (error: unknown) {
       toast(getErrorMessage(error, "Sign in failed. Please try again."), {
@@ -294,11 +294,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
     setUser(null);
     setRole(null);
-    if (role === "admin") {
-      router.push("/admin/login");
-    } else {
-      router.push("/login");
-    }
+    // Admin has its own separate app now; there is no /admin/login here.
+    router.push("/login");
   };
 
   return (

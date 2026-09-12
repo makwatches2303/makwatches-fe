@@ -20,9 +20,8 @@ export function PhoneCaptureModal() {
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // Never render on admin pages, login, checkout, or design-system preview
+  // Never render on login, register, checkout, or design-system preview
   const isExcludedRoute =
-    pathname.startsWith("/admin") ||
     pathname.startsWith("/login") ||
     pathname.startsWith("/register") ||
     pathname.startsWith("/checkout") ||

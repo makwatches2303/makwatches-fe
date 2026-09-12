@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/context/AuthContext";
-import { usePathname } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
@@ -240,11 +239,7 @@ const MobileNavbar = () => {
                     )
                   }
                 >
-                  {role === "customer" && user
-                    ? "Account"
-                    : role === "admin" && user
-                    ? "Dashboard"
-                    : "Login"}
+                  {role === "customer" && user ? "Account" : "Login"}
                 </button>
               )}
               <AnimatePresence>
@@ -265,16 +260,6 @@ const MobileNavbar = () => {
                         >
                           Customer Login
                         </Link>
-                        {/* Admin Login removed per request */}
-                        {/*
-                        <Link
-                          href="/admin/login"
-                          className="block py-2 text-accent"
-                          onClick={() => setOpen(false)}
-                        >
-                          Admin Login
-                        </Link>
-                        */}
                         <Link
                           href="/"
                           className="block py-2 text-accent"
@@ -313,27 +298,6 @@ const MobileNavbar = () => {
                         </button>
                       </div>
                     )}
-                    {role === "admin" && user && (
-                      <div className="py-1">
-                        <Link
-                          href="/admin/dashboard"
-                          className="block py-2 text-accent"
-                          onClick={() => setOpen(false)}
-                        >
-                          Dashboard
-                        </Link>
-                        <button
-                          className="block w-full text-left py-2 text-accent"
-                          onClick={() => {
-                            logout();
-                            setOpen(false);
-                            setExpandedMenu(null);
-                          }}
-                        >
-                          Logout
-                        </button>
-                      </div>
-                    )}
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -351,7 +315,6 @@ const Navbar = () => {
   const [isVisible, setIsVisible] = useState(true);
   const [lastScrollY, setLastScrollY] = useState(0);
   const { user, role, logout } = useAuth();
-  const pathname = usePathname();
 
   // Handle scroll visibility for desktop
   useEffect(() => {
@@ -376,14 +339,6 @@ const Navbar = () => {
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, [lastScrollY]);
-
-  // Check if current route is admin
-  const isAdminRoute = pathname?.startsWith("/admin");
-
-  // Don't render navbar for admin routes
-  if (isAdminRoute) {
-    return null;
-  }
 
   return (
     <>
@@ -448,11 +403,7 @@ const Navbar = () => {
                   className={linkClass}
                   onClick={() => setShowAccountMenu((v) => !v)}
                 >
-                  {role === "customer" && user
-                    ? "Account"
-                    : role === "admin" && user
-                    ? "Dashboard"
-                    : "Login"}
+                  {role === "customer" && user ? "Account" : "Login"}
                 </button>
               )}
               <AnimatePresence>
@@ -473,16 +424,6 @@ const Navbar = () => {
                         >
                           Customer Login
                         </Link>
-                        {/* Admin Login removed per request */}
-                        {/*
-                        <Link
-                          href="/admin/login"
-                          className="block px-4 py-2 hover:bg-accent/10 text-accent transition duration-150"
-                          onClick={() => setShowAccountMenu(false)}
-                        >
-                          Admin Login
-                        </Link>
-                        */}
                         <Link
                           href="/"
                           className="block px-4 py-2 hover:bg-accent/10 text-accent transition duration-150"
@@ -508,26 +449,6 @@ const Navbar = () => {
                           onClick={() => setShowAccountMenu(false)}
                         >
                           Orders
-                        </Link>
-                        <button
-                          className="block w-full text-left px-4 py-2 hover:bg-accent/10 text-accent transition duration-150"
-                          onClick={() => {
-                            logout();
-                            setShowAccountMenu(false);
-                          }}
-                        >
-                          Logout
-                        </button>
-                      </div>
-                    )}
-                    {role === "admin" && user && (
-                      <div className="py-1">
-                        <Link
-                          href="/admin/dashboard"
-                          className="block px-4 py-2 hover:bg-accent/10 text-accent transition duration-150"
-                          onClick={() => setShowAccountMenu(false)}
-                        >
-                          Dashboard
                         </Link>
                         <button
                           className="block w-full text-left px-4 py-2 hover:bg-accent/10 text-accent transition duration-150"

@@ -81,7 +81,9 @@ export default function AuthCallbackPage() {
         // ignore persistence errors
       }
 
-      const dest = isAdmin ? "/admin/dashboard" : "/";
+      // Admin has its own separate app now; this storefront has no admin
+      // destination to send an admin account to.
+      const dest = "/";
       if (!cancelled) setMessage("Signed in! Redirecting…");
       window.location.replace(dest);
     }

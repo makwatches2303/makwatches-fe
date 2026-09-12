@@ -1,6 +1,5 @@
 "use client";
 
-import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 // Modern footer columns inspired by the reference design
@@ -375,16 +374,6 @@ function FooterMobile() {
 }
 
 const Footer = () => {
-  const pathname = usePathname();
-
-  // Check if current route is admin
-  const isAdminRoute = pathname?.startsWith("/admin");
-
-  // Don't render footer for admin routes
-  if (isAdminRoute) {
-    return null;
-  }
-
   return (
     <>
       <div className="hidden md:block">
