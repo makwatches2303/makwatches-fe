@@ -84,14 +84,24 @@ const nextConfig: NextConfig = {
     // strict allow-list: 'self' plus that single origin, nobody else.
     const adminOrigin = process.env.ADMIN_PREVIEW_ORIGIN?.trim();
 
-    const framingHeaders = adminOrigin
-      ? [
-          {
-            key: "Content-Security-Policy",
-            value: `frame-ancestors 'self' ${adminOrigin}`,
-          },
-        ]
-      : [{ key: "X-Frame-Options", value: "SAMEORIGIN" }];
+    const allowedFrameAncestors = [
+      "'self'",
+      "http://localhost:4200",
+      "http://localhost:4201",
+      "http://localhost:3000",
+      "https://admin.makwatches.in",
+      "https://makwatches-admin.vercel.app",
+      ...(adminOrigin ? [adminOrigin] : []),
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    const framingHeaders = [
+      {
+        key: "Content-Security-Policy",
+        value: `frame-ancestors ${allowedFrameAncestors}`,
+      },
+    ];
 
     return [
       {
