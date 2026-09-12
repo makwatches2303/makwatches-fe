@@ -211,30 +211,30 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
           expectedNorm
         );
       }
-      if (userRole !== expectedNorm) {
+      // Allow admins to authenticate via this login form
+      if (expectedNorm && userRole !== expectedNorm && !(expectedNorm === "customer" && userRole === "admin")) {
         throw new Error(`Invalid credentials for ${expectedNorm} login`);
       }
       const tokenKey = userRole === "admin" ? "adminToken" : "customerToken";
       Cookies.set(tokenKey, token, { expires: 7 });
       localStorage.setItem(tokenKey, token);
       if (userRole === "admin") {
+        // Also sync customerToken and sessionStorage so storefront APIs and preview work seamlessly
+        Cookies.set("customerToken", token, { expires: 7 });
+        localStorage.setItem("customerToken", token);
         sessionStorage.setItem("adminAuthToken", token);
+        try {
+          localStorage.setItem("mak_admin_preview", "true");
+        } catch {}
       }
       setRole(userRole);
       setUser(loggedInUser);
-      toast("You have successfully signed in. Welcome back!", { tone: "success" });
-      if (userRole === "customer") {
-        // Come back to where they were sent from -- someone who was asked to
-        // sign in partway through checkout should land back on checkout, not
-        // the homepage, with their bag still in front of them.
-        router.replace(safeRedirectTarget() ?? "/");
+      if (userRole === "admin") {
+        toast("Welcome back, Administrator! Signed in successfully.", { tone: "success" });
+        router.replace(safeRedirectTarget() ?? "/?admin_preview=true");
       } else {
-        // Admin has its own separate app now; this storefront has no admin
-        // area of its own to send them to.
-        router.replace("/");
-      }
-      if (process.env.NODE_ENV !== "production") {
-        console.log(`Redirected to ${userRole === "customer" ? safeRedirectTarget() ?? "/" : "/"}`);
+        toast("You have successfully signed in. Welcome back!", { tone: "success" });
+        router.replace(safeRedirectTarget() ?? "/");
       }
     } catch (error: unknown) {
       toast(getErrorMessage(error, "Sign in failed. Please try again."), {

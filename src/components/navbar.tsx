@@ -239,7 +239,7 @@ const MobileNavbar = () => {
                     )
                   }
                 >
-                  {role === "customer" && user ? "Account" : "Login"}
+                  {role === "admin" ? "Admin" : "Account"}
                 </button>
               )}
               <AnimatePresence>
@@ -267,6 +267,57 @@ const MobileNavbar = () => {
                         >
                           Explore as Guest
                         </Link>
+                      </div>
+                    )}
+                    {role === "admin" && user && (
+                      <div className="py-1">
+                        <a
+                          href={process.env.NEXT_PUBLIC_ADMIN_URL || "http://localhost:4200"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block py-2 font-bold text-accent"
+                          onClick={() => setOpen(false)}
+                        >
+                          ⚙️ Admin Dashboard ↗
+                        </a>
+                        <a
+                          href={`${process.env.NEXT_PUBLIC_ADMIN_URL || "http://localhost:4200"}/dashboard/home`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block py-2 text-accent"
+                          onClick={() => setOpen(false)}
+                        >
+                          🛠️ Homepage Studio ↗
+                        </a>
+                        <button
+                          type="button"
+                          className="block w-full text-left py-2 text-accent"
+                          onClick={() => {
+                            setOpen(false);
+                            try {
+                              const active = localStorage.getItem("mak_admin_preview") === "true";
+                              if (active) {
+                                localStorage.removeItem("mak_admin_preview");
+                                window.location.href = window.location.pathname;
+                              } else {
+                                localStorage.setItem("mak_admin_preview", "true");
+                                window.location.href = window.location.pathname + "?admin_preview=true";
+                              }
+                            } catch {}
+                          }}
+                        >
+                          🏷️ Toggle Section Markups
+                        </button>
+                        <button
+                          className="block w-full text-left py-2 text-accent"
+                          onClick={() => {
+                            logout();
+                            setOpen(false);
+                            setExpandedMenu(null);
+                          }}
+                        >
+                          Logout
+                        </button>
                       </div>
                     )}
                     {role === "customer" && user && (
@@ -403,7 +454,7 @@ const Navbar = () => {
                   className={linkClass}
                   onClick={() => setShowAccountMenu((v) => !v)}
                 >
-                  {role === "customer" && user ? "Account" : "Login"}
+                  {role === "admin" ? "Admin" : "Account"}
                 </button>
               )}
               <AnimatePresence>
@@ -431,6 +482,56 @@ const Navbar = () => {
                         >
                           Explore as Guest
                         </Link>
+                      </div>
+                    )}
+                    {role === "admin" && user && (
+                      <div className="py-1">
+                        <a
+                          href={process.env.NEXT_PUBLIC_ADMIN_URL || "http://localhost:4200"}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block px-4 py-2 font-bold hover:bg-accent/10 text-accent transition duration-150"
+                          onClick={() => setShowAccountMenu(false)}
+                        >
+                          ⚙️ Admin Dashboard ↗
+                        </a>
+                        <a
+                          href={`${process.env.NEXT_PUBLIC_ADMIN_URL || "http://localhost:4200"}/dashboard/home`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="block px-4 py-2 hover:bg-accent/10 text-accent transition duration-150"
+                          onClick={() => setShowAccountMenu(false)}
+                        >
+                          🛠️ Homepage Studio ↗
+                        </a>
+                        <button
+                          type="button"
+                          className="block w-full text-left px-4 py-2 hover:bg-accent/10 text-accent transition duration-150"
+                          onClick={() => {
+                            setShowAccountMenu(false);
+                            try {
+                              const active = localStorage.getItem("mak_admin_preview") === "true";
+                              if (active) {
+                                localStorage.removeItem("mak_admin_preview");
+                                window.location.href = window.location.pathname;
+                              } else {
+                                localStorage.setItem("mak_admin_preview", "true");
+                                window.location.href = window.location.pathname + "?admin_preview=true";
+                              }
+                            } catch {}
+                          }}
+                        >
+                          🏷️ Toggle Section Markups
+                        </button>
+                        <button
+                          className="block w-full text-left px-4 py-2 hover:bg-accent/10 text-accent transition duration-150"
+                          onClick={() => {
+                            logout();
+                            setShowAccountMenu(false);
+                          }}
+                        >
+                          Logout
+                        </button>
                       </div>
                     )}
                     {role === "customer" && user && (

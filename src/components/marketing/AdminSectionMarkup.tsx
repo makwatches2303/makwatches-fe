@@ -68,8 +68,8 @@ export function AdminSectionMarkup({
   return (
     <section className="relative group/markup border-2 border-dashed border-amber-400/60 bg-amber-400/[0.02] transition-colors hover:border-amber-500">
       {/* Interactive Admin Badge */}
-      <div className="absolute left-3 top-3 z-40 flex items-center gap-2 rounded-full border border-amber-400/80 bg-neutral-950/95 px-3 py-1.5 text-xs text-white shadow-xl backdrop-blur-md transition-transform group-hover/markup:scale-[1.02]">
-        <span className="flex size-5 shrink-0 items-center justify-center rounded-full bg-amber-500 text-[10px] font-mono font-bold text-black">
+      <div className="absolute left-3 top-3 z-40 flex items-center gap-2 rounded-md border border-amber-400/80 bg-neutral-950/95 px-2.5 py-1 text-xs text-white shadow-xl backdrop-blur-md transition-transform group-hover/markup:scale-[1.01]">
+        <span className="flex size-4.5 shrink-0 items-center justify-center rounded bg-amber-500 text-[10px] font-mono font-bold text-black">
           #{sectionNumber}
         </span>
         <div className="flex items-center gap-1.5">
@@ -84,7 +84,7 @@ export function AdminSectionMarkup({
           href={editUrl}
           target="_blank"
           rel="noopener noreferrer"
-          className="ml-1 inline-flex items-center gap-1 rounded-full bg-amber-500 px-2.5 py-0.5 text-[11px] font-bold text-black transition-all hover:bg-amber-400 shadow-xs"
+          className="ml-1 inline-flex items-center gap-1 rounded bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-black transition-all hover:bg-amber-400 shadow-xs"
           title={`Edit ${title} in Admin Homepage Studio`}
         >
           <span>Edit in Studio</span>
@@ -117,7 +117,9 @@ export function AdminPreviewToolbar() {
     }
   }, [searchParams]);
 
-  if (!isAdminPreview) return null;
+  // If inside an iframe (like the admin live preview), do not render toolbar to avoid obscuring content
+  const isFramed = typeof window !== "undefined" && window.self !== window.top;
+  if (!isAdminPreview || isFramed) return null;
 
   const adminBaseUrl =
     typeof window !== "undefined" && window.location.hostname.includes("localhost")
@@ -137,25 +139,25 @@ export function AdminPreviewToolbar() {
   }
 
   return (
-    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-3 rounded-full border-2 border-amber-400/80 bg-neutral-950/95 px-4 py-2 text-xs text-white shadow-2xl backdrop-blur-xl">
-      <div className="flex items-center gap-2">
-        <span className="size-2 rounded-full bg-amber-400 animate-pulse" />
-        <span className="font-bold text-amber-200">Admin Section Inspector ON</span>
+    <div className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 rounded-lg border border-amber-400/60 bg-neutral-950/95 px-3 py-1.5 text-xs text-white shadow-2xl backdrop-blur-xl">
+      <div className="flex items-center gap-1.5">
+        <span className="size-1.5 rounded-full bg-amber-400 animate-pulse" />
+        <span className="text-[11px] font-bold text-amber-200 uppercase tracking-wider">Inspector ON</span>
       </div>
       <a
         href={`${adminBaseUrl}/dashboard/home`}
         target="_blank"
         rel="noopener noreferrer"
-        className="rounded-full bg-amber-500 px-3 py-1 font-bold text-black hover:bg-amber-400 transition-colors"
+        className="rounded bg-amber-500 px-2.5 py-1 text-[11px] font-bold text-black hover:bg-amber-400 transition-colors"
       >
-        Open Homepage Studio ↗
+        Homepage Studio ↗
       </a>
       <button
         type="button"
         onClick={handleExit}
-        className="rounded-full border border-neutral-700 bg-neutral-900 px-2.5 py-1 text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors"
+        className="rounded border border-neutral-700 bg-neutral-900 px-2 py-1 text-[11px] text-neutral-300 hover:text-white hover:bg-neutral-800 transition-colors"
       >
-        Exit Inspector ✕
+        Exit ✕
       </button>
     </div>
   );
