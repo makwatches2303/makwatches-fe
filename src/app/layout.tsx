@@ -87,21 +87,22 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
-      { url: "/mak-logo.svg", type: "image/svg+xml" },
-      { url: "/mak-logo.svg", sizes: "any" },
+      {
+        url: "/icon.png",
+        media: "(prefers-color-scheme: light)",
+        type: "image/png",
+      },
+      {
+        url: "/icon-dark.png",
+        media: "(prefers-color-scheme: dark)",
+        type: "image/png",
+      },
+      { url: "/favicon.ico", sizes: "any" },
     ],
-    shortcut: ["/mak-logo.svg"],
+    shortcut: ["/icon.png"],
     apple: [
-      { url: "/mak-logo.svg", type: "image/svg+xml" },
       { url: "/apple-icon.png", sizes: "192x192", type: "image/png" },
       { url: "/apple-icon-180x180.png", sizes: "180x180", type: "image/png" },
-    ],
-    other: [
-      {
-        rel: "mask-icon",
-        url: "/mak-logo.svg",
-        color: "#531A1A",
-      },
     ],
   },
   manifest: "/manifest.json",
