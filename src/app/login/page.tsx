@@ -166,20 +166,6 @@ export default function CustomerAuthPage() {
             </button>
           </div>
 
-          <div className="mt-6 border-2 border-mak-line bg-mak-surface/40 p-3 text-center">
-            <Text size="small" tone="muted" as="span">
-              MAK Watches Administrator?{" "}
-            </Text>
-            <a
-              href={process.env.NEXT_PUBLIC_ADMIN_URL || "http://localhost:4200"}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="font-display text-mak-small font-extrabold text-mak-accent underline-offset-4 hover:underline"
-            >
-              Go to Admin Panel ↗
-            </a>
-          </div>
-
           <Divider className="mt-6" weight="hairline" />
           <Text size="small" tone="subtle" className="mt-4 text-center">
             By continuing, you agree to our{" "}
