@@ -88,14 +88,14 @@ export function ProductCard({
         </Link>
 
         {label ? (
-          <Badge className="pointer-events-none absolute left-3 top-3">
+          <Badge className="pointer-events-none absolute left-2 top-2 sm:left-2.5 sm:top-2.5 max-w-[calc(100%-2.75rem)] truncate border px-1.5 py-0.5 text-[9px] sm:text-[10px]">
             {label}
           </Badge>
         ) : null}
 
         <WishlistButton
           product={product}
-          className="absolute right-3 top-3"
+          className="absolute right-2 top-2 sm:right-2.5 sm:top-2.5"
         />
 
         {soldOut ? (
@@ -121,8 +121,8 @@ export function ProductCard({
               type="button"
               onClick={() => openQuickView(product.id)}
               className={cn(
-                "min-h-11 flex-1 border-t-2 border-mak-line bg-white px-3 py-3",
-                "font-display text-mak-micro font-extrabold uppercase tracking-[0.06em] text-mak-ink",
+                "min-h-9 sm:min-h-10 flex-1 border-t-2 border-mak-line bg-white px-2 py-2 sm:px-3 sm:py-2.5",
+                "font-display text-[10px] sm:text-mak-micro font-bold uppercase tracking-[0.04em] text-mak-ink truncate",
                 "transition-colors duration-200 ease-mak hover:bg-mak-surface",
                 "focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-mak-accent"
               )}
@@ -134,15 +134,18 @@ export function ProductCard({
               product={product}
               buttonSize="sm"
               label="Add +"
-              className="min-h-11 flex-1 border-x-0 border-b-0 border-t-2 !px-3 text-mak-micro uppercase tracking-[0.06em]"
+              className="min-h-9 sm:min-h-10 flex-1 border-x-0 border-b-0 border-t-2 !px-2 sm:!px-3 text-[10px] sm:text-mak-micro font-bold uppercase tracking-[0.04em]"
             />
           </div>
         ) : null}
       </div>
 
-      <div className="flex min-w-0 flex-1 flex-col gap-1 p-4 pb-5">
-        {/* break-words so catalog SKUs wrap instead of overflowing the cell. */}
-        <h3 className="font-display text-mak-heading font-extrabold leading-tight tracking-[-0.01em] text-mak-ink break-words">
+      <div className="flex min-w-0 flex-1 flex-col gap-1 sm:gap-1.5 p-3 sm:p-4 pb-3.5 sm:pb-5">
+        {/* Title: 2-line clamp, clean responsive size, uniform height */}
+        <h3
+          className="font-display text-[13px] sm:text-sm md:text-[15px] font-bold leading-snug tracking-[-0.01em] text-mak-ink break-words line-clamp-2 min-h-[2.6em]"
+          title={product.name}
+        >
           {/*
             A second link to the same product, and the visible one. No
             full-card ::after overlay here: that would sit above the wishlist
@@ -157,29 +160,28 @@ export function ProductCard({
         </h3>
 
         {/*
-          Movement is shown only when the product actually records one. There is
-          no placeholder here on purpose: inventing "Quartz" for a product whose
-          movement is unknown would be a fabricated specification.
-
-          The brand is the fallback, but only when it adds something: most
-          catalog names already begin with the brand ("Fastrack Streetwear…"),
-          and repeating it underneath reads as a rendering error.
+          Movement is shown only when the product actually records one.
+          The brand is the fallback.
         */}
         {product.specs?.movement ? (
-          <Text size="small" tone="muted">
+          <p className="text-[11px] sm:text-xs text-mak-ink-subtle uppercase tracking-[0.05em] truncate">
             {product.specs.movement}
-          </Text>
+          </p>
         ) : secondaryLabel ? (
-          <Text size="small" tone="muted">
+          <p className="text-[11px] sm:text-xs text-mak-ink-subtle uppercase tracking-[0.05em] truncate">
             {secondaryLabel}
-          </Text>
-        ) : null}
+          </p>
+        ) : (
+          <p className="text-[11px] sm:text-xs text-transparent select-none" aria-hidden="true">
+            &nbsp;
+          </p>
+        )}
 
         <Price
           value={price}
           compareAt={compareAt}
-          size="md"
-          className="mt-auto pt-3"
+          size="sm"
+          className="mt-auto pt-2 sm:pt-3 !text-sm sm:!text-base md:!text-lg font-bold"
         />
       </div>
     </article>

@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { EmptyState, ProductCardSkeleton, RuleGrid } from "@/design-system";
+import { EmptyState, ProductCardSkeleton, RuleGrid, type RuleGridProps } from "@/design-system";
 import type { Product } from "@/lib/api/types";
 
 import { ProductCard } from "./ProductCard";
@@ -16,6 +16,8 @@ import { ProductCard } from "./ProductCard";
 
 export interface ProductGridProps {
   products: Product[];
+  /** Grid column configuration across breakpoints. */
+  cols?: RuleGridProps["cols"];
   /** Render skeletons instead of products. */
   loading?: boolean;
   /** How many skeletons to show while loading. */
@@ -32,6 +34,7 @@ export interface ProductGridProps {
 
 export function ProductGrid({
   products,
+  cols = { base: 2, sm: 2, md: 3, lg: 3, xl: 4 },
   loading = false,
   skeletonCount = 8,
   emptyTitle = "Nothing matches yet.",
@@ -44,7 +47,7 @@ export function ProductGrid({
   if (loading) {
     return (
       <RuleGrid
-        cols={{ base: 2, md: 3, lg: 4 }}
+        cols={cols}
         aria-busy="true"
         aria-label="Loading products"
         className={className}
@@ -68,7 +71,7 @@ export function ProductGrid({
   }
 
   return (
-    <RuleGrid cols={{ base: 2, md: 3, lg: 4 }} className={cn(className)}>
+    <RuleGrid cols={cols} className={cn(className)}>
       {products.map((product, index) => (
         <ProductCard
           key={product.id}

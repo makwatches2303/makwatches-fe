@@ -144,7 +144,13 @@ export interface RuleGridProps extends HTMLAttributes<HTMLDivElement> {
    * Columns per breakpoint. Defaults follow the approved responsive strategy:
    * 1-up mobile, 2-up tablet, 3-up desktop.
    */
-  cols?: { base?: 1 | 2 | 3 | 4; md?: 1 | 2 | 3 | 4; lg?: 1 | 2 | 3 | 4 | 5 | 6 };
+  cols?: {
+    base?: 1 | 2 | 3 | 4;
+    sm?: 1 | 2 | 3 | 4;
+    md?: 1 | 2 | 3 | 4;
+    lg?: 1 | 2 | 3 | 4 | 5 | 6;
+    xl?: 1 | 2 | 3 | 4 | 5 | 6;
+  };
   /** Drop the outer 2px border, for grids that sit inside another ruled box. */
   bordered?: boolean;
   children?: ReactNode;
@@ -162,6 +168,13 @@ const BASE_COLS = {
   4: "grid-cols-4",
 } as const;
 
+const SM_COLS = {
+  1: "sm:grid-cols-1",
+  2: "sm:grid-cols-2",
+  3: "sm:grid-cols-3",
+  4: "sm:grid-cols-4",
+} as const;
+
 const MD_COLS = {
   1: "md:grid-cols-1",
   2: "md:grid-cols-2",
@@ -176,6 +189,15 @@ const LG_COLS = {
   4: "lg:grid-cols-4",
   5: "lg:grid-cols-5",
   6: "lg:grid-cols-6",
+} as const;
+
+const XL_COLS = {
+  1: "xl:grid-cols-1",
+  2: "xl:grid-cols-2",
+  3: "xl:grid-cols-3",
+  4: "xl:grid-cols-4",
+  5: "xl:grid-cols-5",
+  6: "xl:grid-cols-6",
 } as const;
 
 /**
@@ -196,7 +218,7 @@ export function RuleGrid({
   children,
   ...rest
 }: RuleGridProps) {
-  const { base = 1, md = 2, lg = 3 } = cols ?? {};
+  const { base = 1, sm, md = 2, lg = 3, xl } = cols ?? {};
 
   // An incomplete last row leaves empty grid tracks with no child to paint
   // .mak-rule-grid's own cell background over them, so the container's
@@ -205,18 +227,21 @@ export function RuleGrid({
   // has this problem -- a single column is always "full" -- so fillers
   // only ever need to render from md upward.
   const count = Children.count(children);
-  const neededAtMd = (md - (count % md)) % md;
-  const neededAtLg = (lg - (count % lg)) % lg;
-  const fillerCount = Math.max(neededAtMd, neededAtLg);
+  const neededAtSm = sm ? (sm - (count % sm)) % sm : 0;
+  const neededAtMd = md ? (md - (count % md)) % md : 0;
+  const neededAtLg = lg ? (lg - (count % lg)) % lg : 0;
+  const neededAtXl = xl ? (xl - (count % xl)) % xl : 0;
+  const fillerCount = Math.max(neededAtSm, neededAtMd, neededAtLg, neededAtXl);
   const fillers = Array.from({ length: fillerCount }, (_, i) => (
     <div
       key={`filler-${i}`}
       aria-hidden="true"
       className={cn(
         "hidden",
-        i < neededAtMd && i < neededAtLg && "md:block",
-        i < neededAtMd && i >= neededAtLg && "md:block lg:hidden",
-        i >= neededAtMd && i < neededAtLg && "lg:block"
+        Boolean(sm) && i < neededAtSm && "sm:block md:hidden",
+        i < neededAtMd && "md:block lg:hidden",
+        i < neededAtLg && (Boolean(xl) ? "lg:block xl:hidden" : "lg:block"),
+        Boolean(xl) && i < neededAtXl && "xl:block"
       )}
     />
   ));
@@ -226,8 +251,10 @@ export function RuleGrid({
       className={cn(
         "mak-rule-grid",
         BASE_COLS[base],
+        sm && SM_COLS[sm],
         MD_COLS[md],
         LG_COLS[lg],
+        xl && XL_COLS[xl],
         !bordered && "border-0",
         className
       )}
