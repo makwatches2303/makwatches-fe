@@ -482,3 +482,53 @@ export async function fetchCategoryCounts(
 
   return Object.fromEntries(entries);
 }
+
+/** Key into the stand-in image map. Parent and child both matter: "Men >
+ * Leather watch" and "Women > Leather watch" are different tiles. */
+export function categoryImageKey(
+  mainCategory: string,
+  subcategory: string
+): string {
+  return `${mainCategory.trim().toLowerCase()}|${subcategory.trim().toLowerCase()}`;
+}
+
+/**
+ * A stand-in tile image for subcategories the admin has not given one.
+ *
+ * Without this, a subcategory with no `imageUrl` renders the branded "no
+ * image" placeholder, so a catalogue that is merely un-merchandised looks
+ * broken -- which is what most of the category grid looked like, since only
+ * two of twelve subcategories carry an image.
+ *
+ * Borrowing the newest in-stock product's photo is a display fallback only:
+ * nothing is written back, and an image the admin sets later always wins (see
+ * autoTiles in lib/category-tiles.ts). One request per imageless
+ * subcategory, limit=1, and only for the ones that need it.
+ */
+export async function fetchCategoryFallbackImages(
+  wanted: { mainCategory: string; subcategory: string }[]
+): Promise<Record<string, string>> {
+  const entries = await Promise.all(
+    wanted.map(async ({ mainCategory, subcategory }) => {
+      const page = await fetchProducts(
+        {
+          mainCategory,
+          subcategory,
+          limit: 1,
+          inStock: true,
+          sortBy: "createdAt",
+          order: "desc",
+        },
+        `fetchCategoryFallbackImage(${mainCategory}/${subcategory})`
+      );
+
+      const product = page.items[0];
+      const image =
+        product?.media?.[0]?.url ?? product?.images?.[0] ?? product?.imageUrl ?? "";
+
+      return [categoryImageKey(mainCategory, subcategory), image] as const;
+    })
+  );
+
+  return Object.fromEntries(entries.filter(([, image]) => image));
+}

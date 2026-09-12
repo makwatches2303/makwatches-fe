@@ -89,7 +89,10 @@ function buildTile(
 }
 
 /** One tile per subcategory, in tree order. */
-function autoTiles(categories: Category[]): ResolvedCategoryTile[] {
+function autoTiles(
+  categories: Category[],
+  fallbackImages: Record<string, string> = {}
+): ResolvedCategoryTile[] {
   return categories.flatMap((category) =>
     (category.subcategories ?? [])
       .filter((sub) => sub.name?.trim())
@@ -99,7 +102,10 @@ function autoTiles(categories: Category[]): ResolvedCategoryTile[] {
           id: categorySlug(`${category.name}-${name}`),
           label: name,
           href: categoryHref(category.name, name),
-          image: sub.imageUrl || undefined,
+          // The admin's own image always wins; the borrowed product photo is
+          // only a stand-in so an un-merchandised subcategory does not render
+          // as a "no image" placeholder.
+          image: sub.imageUrl || fallbackImage(fallbackImages, category.name, name),
           mainCategory: category.name,
           subcategory: name,
         };
@@ -107,10 +113,21 @@ function autoTiles(categories: Category[]): ResolvedCategoryTile[] {
   );
 }
 
+/** Must match categoryImageKey in lib/api/server.ts. */
+function fallbackImage(
+  images: Record<string, string>,
+  mainCategory: string,
+  subcategory: string
+): string | undefined {
+  const key = `${mainCategory.trim().toLowerCase()}|${subcategory.trim().toLowerCase()}`;
+  return images[key] || undefined;
+}
+
 /** Match one curated reference against the live tree. */
 function resolveTile(
   tile: CategoryTileConfig,
-  categories: Category[]
+  categories: Category[],
+  fallbackImages: Record<string, string> = {}
 ): { tile: ResolvedCategoryTile } | { error: string } {
   const value = tile.value?.trim();
   if (!value) return { error: "tile has no category reference" };
@@ -128,8 +145,14 @@ function resolveTile(
         sameName(s.name, target)
       );
       if (sub) {
+        const name = sub.name.trim();
         return {
-          tile: buildTile(tile, category.name, sub.name.trim(), sub.imageUrl),
+          tile: buildTile(
+            tile,
+            category.name,
+            name,
+            sub.imageUrl || fallbackImage(fallbackImages, category.name, name)
+          ),
         };
       }
     }
@@ -151,12 +174,16 @@ function resolveTile(
  */
 export function resolveCategoryTiles(
   content: CategoryTilesContent,
-  categories: Category[]
+  categories: Category[],
+  /** Stand-in images for subcategories with none of their own, keyed by
+   * categoryImageKey. Optional -- omit and those tiles fall back to the
+   * branded placeholder as before. */
+  fallbackImages: Record<string, string> = {}
 ): { tiles: ResolvedCategoryTile[]; warnings: TileWarning[] } {
   if (!content.enabled) return { tiles: [], warnings: [] };
 
   if (content.autoFromCategories || content.tiles.length === 0) {
-    return { tiles: autoTiles(categories), warnings: [] };
+    return { tiles: autoTiles(categories, fallbackImages), warnings: [] };
   }
 
   const ordered = [...content.tiles].sort(
@@ -169,7 +196,7 @@ export function resolveCategoryTiles(
   for (const tile of ordered) {
     if (!tile.enabled) continue;
 
-    const result = resolveTile(tile, categories);
+    const result = resolveTile(tile, categories, fallbackImages);
     if ("error" in result) {
       warnings.push({
         tileId: tile.id,

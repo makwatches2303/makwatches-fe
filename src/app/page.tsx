@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 
 import { Container, ErrorState, Marquee, Section } from "@/design-system";
 import {
+  AdminPreviewToolbar,
+  AdminSectionMarkup,
   CraftScroller,
   EditorialGallery,
   StatGrid,
@@ -12,6 +14,7 @@ import { isRenderableHero } from "@/lib/api/home-content";
 import {
   fetchCategories,
   fetchCategoryCounts,
+  fetchCategoryFallbackImages,
   fetchHomeContent,
   fetchProductById,
   fetchRailProducts,
@@ -75,7 +78,22 @@ export default async function HomePage() {
     ...storefront.rails.map((rail) => fetchRailProducts(rail)),
   ]);
 
-  const counts = await fetchCategoryCounts(categories.map((c) => c.name));
+  // Subcategories the admin has not given an image: borrow one from a product
+  // in that subcategory so the tile shows the goods rather than the branded
+  // "no image" placeholder. Only requested for the ones that need it.
+  const imagelessSubcategories = categories.flatMap((category) =>
+    (category.subcategories ?? [])
+      .filter((sub) => sub.name?.trim() && !sub.imageUrl)
+      .map((sub) => ({
+        mainCategory: category.name,
+        subcategory: sub.name.trim(),
+      }))
+  );
+
+  const [counts, categoryFallbackImages] = await Promise.all([
+    fetchCategoryCounts(categories.map((c) => c.name)),
+    fetchCategoryFallbackImages(imagelessSubcategories),
+  ]);
 
   const [heroSlide, ...remainingSlides] = homeContent.heroSlides;
 
@@ -125,121 +143,198 @@ export default async function HomePage() {
       ) : null}
 
       {storefront.hero.enabled ? (
-        <HomeHero
-          content={storefront.hero}
-          trust={storefront.trust}
-          slide={heroSlide}
-          linkedProduct={heroProduct}
-        />
+        <AdminSectionMarkup
+          sectionId="hero"
+          sectionNumber="01"
+          title="Top Hero · Main Watch Carousel & Banner"
+          locationBadge="Screen 1 · Above Fold"
+        >
+          <HomeHero
+            content={storefront.hero}
+            trust={storefront.trust}
+            slide={heroSlide}
+            linkedProduct={heroProduct}
+          />
+        </AdminSectionMarkup>
       ) : null}
 
       {storefront.marquee.enabled && marqueeTerms.length > 0 ? (
-        <Marquee duration={storefront.marquee.durationSeconds}>
-          {marqueeTerms.map((term) => (
-            <span key={term}>{term.toUpperCase()} ·</span>
-          ))}
-        </Marquee>
+        <AdminSectionMarkup
+          sectionId="marquee"
+          sectionNumber="02"
+          title="Ticker Tape · Announcement Marquee"
+          locationBadge="Screen 1.5 · Under Hero"
+        >
+          <Marquee duration={storefront.marquee.durationSeconds}>
+            {marqueeTerms.map((term) => (
+              <span key={term}>{term.toUpperCase()} ·</span>
+            ))}
+          </Marquee>
+        </AdminSectionMarkup>
       ) : null}
 
       {storefront.stats.enabled && storefront.stats.items.length > 0 ? (
-        <Section spacing="default">
-          <Container>
-            <StatGrid stats={storefront.stats.items} />
-          </Container>
-        </Section>
+        <AdminSectionMarkup
+          sectionId="stats"
+          sectionNumber="03"
+          title="Milestone Counter · Brand Figures"
+          locationBadge="Screen 2 · Trust Numbers"
+        >
+          <Section spacing="default">
+            <Container>
+              <StatGrid stats={storefront.stats.items} />
+            </Container>
+          </Section>
+        </AdminSectionMarkup>
       ) : null}
 
       {storefront.trust.enabled && storefront.trust.items.length > 0 ? (
-        <Section spacing="tight">
-          <TrustStrip
-            items={storefront.trust.items.map((title) => ({ title }))}
-            variant="bare"
-          />
-        </Section>
+        <AdminSectionMarkup
+          sectionId="trust"
+          sectionNumber="04"
+          title="Guarantee Strip · Buyer Protection"
+          locationBadge="Screen 2.5 · Protection Badges"
+        >
+          <Section spacing="tight">
+            <TrustStrip
+              items={storefront.trust.items.map((title) => ({ title }))}
+              variant="bare"
+            />
+          </Section>
+        </AdminSectionMarkup>
       ) : null}
 
-      <HomeCategories
-        content={storefront.categoryTiles}
-        categories={categories}
-        counts={counts}
-      />
+      <AdminSectionMarkup
+        sectionId="categories"
+        sectionNumber="05"
+        title="Category Hub · Men, Women & Types"
+        locationBadge="Screen 3 · Main Categories"
+      >
+        <HomeCategories
+          content={storefront.categoryTiles}
+          categories={categories}
+          counts={counts}
+          fallbackImages={categoryFallbackImages}
+        />
+      </AdminSectionMarkup>
 
       {/*
         Product rails, in the admin's configured order. The first is rendered
         with filter chips when marked filterable, matching the reference's
         collection band; the rest are plain grids.
       */}
-      {storefront.rails.map((rail, index) => {
-        const page = railPages[index];
-        if (!page) return null;
+      <AdminSectionMarkup
+        sectionId="rails"
+        sectionNumber="06"
+        title="Watch Rails · Trending & Bestsellers"
+        locationBadge="Screen 4 · Main Shopping Rows"
+      >
+        {storefront.rails.map((rail, index) => {
+          const page = railPages[index];
+          if (!page) return null;
 
-        return rail.filterable ? (
-          <CollectionSection
-            key={rail.id}
-            eyebrow={rail.eyebrow}
-            title={rail.title}
-            products={page.items}
-            failed={page.failed}
-            total={totalPieces || page.meta?.total}
-            viewAll={rail.viewAll.href ? rail.viewAll : undefined}
-            priorityCount={index === 0 ? 4 : 0}
-          />
-        ) : (
-          <ProductSection
-            key={rail.id}
-            eyebrow={rail.eyebrow}
-            title={rail.title}
-            products={page.items}
-            failed={page.failed}
-            total={page.meta?.total}
-            viewAll={rail.viewAll.href ? rail.viewAll : undefined}
-            priorityCount={index === 0 ? 4 : 0}
-            tone={rail.tone === "surface" ? "surface" : "default"}
-          />
-        );
-      })}
+          return rail.filterable ? (
+            <CollectionSection
+              key={rail.id}
+              eyebrow={rail.eyebrow}
+              title={rail.title}
+              products={page.items}
+              failed={page.failed}
+              total={totalPieces || page.meta?.total}
+              viewAll={rail.viewAll.href ? rail.viewAll : undefined}
+              priorityCount={index === 0 ? 4 : 0}
+            />
+          ) : (
+            <ProductSection
+              key={rail.id}
+              eyebrow={rail.eyebrow}
+              title={rail.title}
+              products={page.items}
+              failed={page.failed}
+              total={page.meta?.total}
+              viewAll={rail.viewAll.href ? rail.viewAll : undefined}
+              priorityCount={index === 0 ? 4 : 0}
+              tone={rail.tone === "surface" ? "surface" : "default"}
+            />
+          );
+        })}
+      </AdminSectionMarkup>
 
       {storefront.craft.enabled && storefront.craft.panels.length > 0 ? (
-        <CraftScroller
-          panels={storefront.craft.panels.map((panel, index) => ({
-            number: panel.number,
-            title: panel.title,
-            body: panel.body,
-            specs: panel.specs,
-            image:
-              toMediaRef(panel.image, "") ??
-              craftImages[index] ??
-              craftImages[0] ??
-              null,
-          }))}
-        />
+        <AdminSectionMarkup
+          sectionId="craft"
+          sectionNumber="07"
+          title="Story 1 · Watchmaking Craft & Specs"
+          locationBadge="Screen 5 · Mid-Page Feature"
+        >
+          <CraftScroller
+            panels={storefront.craft.panels.map((panel, index) => ({
+              number: panel.number,
+              title: panel.title,
+              body: panel.body,
+              specs: panel.specs,
+              image:
+                toMediaRef(panel.image, "") ??
+                craftImages[index] ??
+                craftImages[0] ??
+                null,
+            }))}
+          />
+        </AdminSectionMarkup>
       ) : null}
 
-      {storefront.house.enabled ? (
-        <StoryBlock
-          eyebrow={storefront.house.eyebrow}
-          headline={storefront.house.title}
-          body={storefront.house.body}
-          cta={storefront.house.cta}
-          image={toMediaRef(storefront.house.image, "") ?? craftImages[0] ?? null}
-          imageAlt=""
-        />
-      ) : (
-        <HomeStory
-          feature={homeContent.collections[0]}
-          fallbackSlide={storySlide}
-        />
-      )}
+      <AdminSectionMarkup
+        sectionId="house"
+        sectionNumber="08"
+        title="Story 2 · The House of MAK Banner"
+        locationBadge="Screen 6 · Brand Editorial"
+      >
+        {storefront.house.enabled && storefront.house.title.trim() ? (
+          <StoryBlock
+            eyebrow={storefront.house.eyebrow}
+            headline={storefront.house.title}
+            body={storefront.house.body}
+            cta={
+              storefront.house.cta.label.trim() && storefront.house.cta.href.trim()
+                ? storefront.house.cta
+                : undefined
+            }
+            image={toMediaRef(storefront.house.image, "") ?? craftImages[0] ?? null}
+            imageAlt=""
+          />
+        ) : (
+          <HomeStory
+            feature={homeContent.collections[0]}
+            fallbackSlide={storySlide}
+          />
+        )}
+      </AdminSectionMarkup>
 
-      <EditorialGallery
-        images={homeContent.gallery
-          .filter((image) => image.url)
-          .map((image) => ({ url: image.url!, alt: image.alt }))}
-      />
+      <AdminSectionMarkup
+        sectionId="gallery"
+        sectionNumber="09"
+        title="Lookbook · Instagram & Lifestyle Wall"
+        locationBadge="Screen 7 · Photo Wall"
+      >
+        <EditorialGallery
+          images={homeContent.gallery
+            .filter((image) => image.url)
+            .map((image) => ({ url: image.url!, alt: image.alt }))}
+        />
+      </AdminSectionMarkup>
 
       {storefront.poster.enabled ? (
-        <HomeNewsletter content={storefront.poster} />
+        <AdminSectionMarkup
+          sectionId="poster"
+          sectionNumber="11"
+          title="Bottom Card · VIP Club & Newsletter"
+          locationBadge="Screen 9 · Above Footer"
+        >
+          <HomeNewsletter content={storefront.poster} />
+        </AdminSectionMarkup>
       ) : null}
+
+      <AdminPreviewToolbar />
     </div>
   );
 }

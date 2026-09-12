@@ -26,14 +26,22 @@ export interface HomeCategoriesProps {
   categories: Category[];
   /** Product totals keyed by top-level category name. */
   counts?: Record<string, number>;
+  /** Stand-in images for subcategories the admin has not given one, keyed by
+   * categoryImageKey. */
+  fallbackImages?: Record<string, string>;
 }
 
 export function HomeCategories({
   content,
   categories,
   counts = {},
+  fallbackImages = {},
 }: HomeCategoriesProps) {
-  const { tiles: resolved, warnings } = resolveCategoryTiles(content, categories);
+  const { tiles: resolved, warnings } = resolveCategoryTiles(
+    content,
+    categories,
+    fallbackImages
+  );
 
   // Broken references are a merchandising problem, not a rendering one: the
   // tile is already omitted, and this makes it findable in the server log

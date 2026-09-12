@@ -27,3 +27,8 @@ export {
   EditorialGallery,
   type EditorialGalleryProps,
 } from "./EditorialGallery";
+export {
+  AdminSectionMarkup,
+  AdminPreviewToolbar,
+  type AdminSectionMarkupProps,
+} from "./AdminSectionMarkup";

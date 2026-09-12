@@ -76,6 +76,23 @@ const nextConfig: NextConfig = {
   },
 
   async headers() {
+    // The admin app embeds the storefront in a live-preview iframe, and it is
+    // served from its own origin. X-Frame-Options cannot express "this one
+    // other origin" -- ALLOW-FROM is dead in every current browser -- so when
+    // an admin origin is configured the framing rule is expressed as CSP
+    // frame-ancestors instead, which browsers honour over XFO. Still a
+    // strict allow-list: 'self' plus that single origin, nobody else.
+    const adminOrigin = process.env.ADMIN_PREVIEW_ORIGIN?.trim();
+
+    const framingHeaders = adminOrigin
+      ? [
+          {
+            key: "Content-Security-Policy",
+            value: `frame-ancestors 'self' ${adminOrigin}`,
+          },
+        ]
+      : [{ key: "X-Frame-Options", value: "SAMEORIGIN" }];
+
     return [
       {
         source: "/:path*",
@@ -86,7 +103,7 @@ const nextConfig: NextConfig = {
             value: "max-age=63072000; includeSubDomains; preload",
           },
           { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "X-Frame-Options", value: "SAMEORIGIN" },
+          ...framingHeaders,
           { key: "Referrer-Policy", value: "origin-when-cross-origin" },
         ],
       },
