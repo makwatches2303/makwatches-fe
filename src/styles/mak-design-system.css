@@ -155,9 +155,15 @@
     background-color: #ffffff;
   }
 
+  .bg-mak-ink .mak-rule-grid,
+  .bg-mak-ink .mak-rule-grid > * {
+    background-color: var(--color-mak-ink);
+  }
+
   /* Full color product imagery (no grayout). */
   .mak-grayscale {
     filter: none;
+
   }
 }
 

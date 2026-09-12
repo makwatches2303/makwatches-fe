@@ -204,20 +204,24 @@ export default function AboutPage() {
       </Section>
 
       {/* Stats */}
-      <Section tone="ink" spacing="default">
+      <Section tone="ink" spacing="default" className="!bg-[#151313] text-white">
         <Container>
-          <RuleGrid cols={{ base: 2, md: 4, lg: 4 }} bordered={false} className="!border-0">
+          <div className="grid grid-cols-2 divide-y divide-white/10 md:grid-cols-4 md:divide-y-0 md:divide-x md:divide-white/10">
             {STATS.map((stat, i) => (
-              <Reveal key={stat.label} delay={i as 0 | 1 | 2 | 3} className="border-t-2 border-mak-on-ink/20 px-2 py-8 text-center first:border-l-0">
-                <Heading level="display" tone="inverse" as="p">
+              <Reveal
+                key={stat.label}
+                delay={i as 0 | 1 | 2 | 3}
+                className="flex flex-col items-center justify-center p-6 text-center sm:p-8"
+              >
+                <span className="font-display text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl">
                   {stat.number}
-                </Heading>
-                <Text size="small" tone="inverse" className="mt-2 opacity-70">
+                </span>
+                <span className="mt-2.5 text-xs font-semibold uppercase tracking-widest text-neutral-300 sm:text-sm">
                   {stat.label}
-                </Text>
+                </span>
               </Reveal>
             ))}
-          </RuleGrid>
+          </div>
         </Container>
       </Section>
 
