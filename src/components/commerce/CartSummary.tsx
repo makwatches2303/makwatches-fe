@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { ButtonLink, Divider, formatPrice } from "@/design-system";
 import { selectAppliedCoupon, useCartStore } from "@/store/cart";
 import { PromoCodeBox } from "./PromoCodeBox";
+import { trackBeginCheckout } from "@/lib/analytics";
 
 export interface CartSummaryProps {
   subtotal: number;
@@ -19,6 +20,7 @@ export function CartSummary({
   showPromoInput = true,
   className,
 }: CartSummaryProps) {
+  const lines = useCartStore((state) => state.lines);
   const appliedCoupon = useCartStore(selectAppliedCoupon);
   const discount = appliedCoupon?.discountAmount ?? 0;
   const total = Math.max(0, subtotal - discount) + (shipping ?? 0);
@@ -61,7 +63,14 @@ export function CartSummary({
         </span>
       </div>
 
-      <ButtonLink href="/checkout" variant="primary" size="lg" block className="mt-4">
+      <ButtonLink
+        href="/checkout"
+        variant="primary"
+        size="lg"
+        block
+        className="mt-4"
+        onClick={() => trackBeginCheckout(lines, total, appliedCoupon?.code)}
+      >
         Checkout
       </ButtonLink>
     </div>

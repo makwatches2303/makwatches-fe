@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { Button, Drawer, EmptyState } from "@/design-system";
 import {
   selectCartCount,
@@ -7,6 +8,7 @@ import {
   useCartStore,
 } from "@/store/cart";
 import { selectCartOpen, useUIStore } from "@/store/ui";
+import { trackViewCart } from "@/lib/analytics";
 
 import { CartLineItem } from "./CartLineItem";
 import { CartSummary } from "./CartSummary";
@@ -26,6 +28,12 @@ export function CartDrawer() {
   const lines = useCartStore((state) => state.lines);
   const count = useCartStore(selectCartCount);
   const subtotal = useCartStore(selectCartSubtotal);
+
+  useEffect(() => {
+    if (open && lines.length > 0) {
+      trackViewCart(lines, subtotal);
+    }
+  }, [open]);
 
   const isEmpty = lines.length === 0;
 

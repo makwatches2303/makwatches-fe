@@ -12,6 +12,7 @@ import {
 } from "@/design-system";
 import { ProductGrid } from "@/components/commerce";
 import { fetchCollections, fetchProducts, isApiConfigured } from "@/lib/api/server";
+import { SearchTracker } from "@/components/analytics/SearchTracker";
 
 /**
  * Search results.
@@ -107,6 +108,7 @@ export default async function SearchPage({
 
   return (
     <div className="mak bg-mak-bg">
+      <SearchTracker query={query} total={total} />
       <Section spacing="tight" className="border-b-2 border-mak-line">
         <Container>
           <Eyebrow withRule className="mb-4">

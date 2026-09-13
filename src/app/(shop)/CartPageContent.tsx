@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import {
   ButtonLink,
   Divider,
@@ -15,6 +16,7 @@ import {
   selectCartSubtotal,
   useCartStore,
 } from "@/store/cart";
+import { trackViewCart, trackBeginCheckout } from "@/lib/analytics";
 
 /**
  * The cart page body.
@@ -38,6 +40,12 @@ export function CartPageContent() {
 
   const discount = appliedCoupon?.discountAmount ?? 0;
   const total = Math.max(0, subtotal - discount);
+
+  useEffect(() => {
+    if (hydrated && lines.length > 0) {
+      trackViewCart(lines, subtotal);
+    }
+  }, [hydrated]);
 
   if (!hydrated) {
     return <LoadingState label="Loading your bag" />;
@@ -126,6 +134,7 @@ export function CartPageContent() {
               size="lg"
               block
               className="mt-5"
+              onClick={() => trackBeginCheckout(lines, total, appliedCoupon?.code)}
             >
               Checkout
             </ButtonLink>

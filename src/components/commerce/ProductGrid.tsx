@@ -1,6 +1,7 @@
 import { cn } from "@/lib/utils";
 import { EmptyState, ProductCardSkeleton, RuleGrid, type RuleGridProps } from "@/design-system";
 import type { Product } from "@/lib/api/types";
+import { ItemListTracker } from "@/components/analytics/ItemListTracker";
 
 import { ProductCard } from "./ProductCard";
 
@@ -29,6 +30,7 @@ export interface ProductGridProps {
   /** Prioritize images in the first row. Use on the first grid of a page only. */
   priorityCount?: number;
   showActions?: boolean;
+  listName?: string;
   className?: string;
 }
 
@@ -42,6 +44,7 @@ export function ProductGrid({
   emptyAction,
   priorityCount = 0,
   showActions = true,
+  listName,
   className,
 }: ProductGridProps) {
   if (loading) {
@@ -71,15 +74,18 @@ export function ProductGrid({
   }
 
   return (
-    <RuleGrid cols={cols} className={cn(className)}>
-      {products.map((product, index) => (
-        <ProductCard
-          key={product.id}
-          product={product}
-          priority={index < priorityCount}
-          showActions={showActions}
-        />
-      ))}
-    </RuleGrid>
+    <>
+      <ItemListTracker products={products} listName={listName} />
+      <RuleGrid cols={cols} className={cn(className)}>
+        {products.map((product, index) => (
+          <ProductCard
+            key={product.id}
+            product={product}
+            priority={index < priorityCount}
+            showActions={showActions}
+          />
+        ))}
+      </RuleGrid>
+    </>
   );
 }

@@ -12,6 +12,7 @@ import { FALLBACK_STOREFRONT } from "@/lib/api/storefront";
 import PageTransition from "@/components/page-transition";
 import LenisProvider from "@/components/lenis-provider";
 import { MarketingProviders } from "@/components/marketing/MarketingProviders";
+import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://makwatches.in"),
@@ -157,22 +158,7 @@ export default async function RootLayout({
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
         />
-        <Script
-          strategy="afterInteractive"
-          src="https://www.googletagmanager.com/gtag/js?id=G-4RCRSM9PJT"
-        />
-        <Script
-          id="google-analytics"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-              window.dataLayer = window.dataLayer || [];
-              function gtag(){dataLayer.push(arguments);}
-              gtag('js', new Date());
-              gtag('config', 'G-4RCRSM9PJT');
-            `,
-          }}
-        />
+        <GoogleAnalytics />
       </head>
       <body className="antialiased min-h-screen flex flex-col">
         <LenisProvider>

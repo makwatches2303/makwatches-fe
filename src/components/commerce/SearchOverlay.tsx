@@ -19,6 +19,7 @@ import {
 import { search as searchApi } from "@/lib/api/search";
 import type { SearchResult } from "@/lib/api/types";
 import { selectSearchOpen, useUIStore } from "@/store/ui";
+import { trackSearch } from "@/lib/analytics";
 
 import { SearchSuggestions } from "./SearchSuggestions";
 
@@ -151,6 +152,7 @@ export function SearchOverlay() {
     const term = query.trim();
     if (!term) return;
 
+    trackSearch(term, result.total);
     rememberQuery(term);
     close();
     router.push(`/search?q=${encodeURIComponent(term)}`);

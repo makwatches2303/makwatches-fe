@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { cn } from "@/lib/utils";
 import {
@@ -16,6 +16,7 @@ import type { Product } from "@/lib/api/types";
 import { effectivePrice } from "@/lib/pricing";
 import { useCartStore } from "@/store/cart";
 import { useUIStore } from "@/store/ui";
+import { trackViewItem } from "@/lib/analytics";
 
 /**
  * The purchase controls: quantity, add to bag, wishlist.
@@ -92,6 +93,12 @@ export function PurchasePanel({ product }: PurchasePanelProps) {
   const [quantity, setQuantity] = useState(1);
   const addLine = useCartStore((state) => state.addLine);
   const openCart = useUIStore((state) => state.openCart);
+
+  useEffect(() => {
+    if (product?.id) {
+      trackViewItem(product);
+    }
+  }, [product?.id]);
 
   const soldOut = product.stock <= 0;
   const max = Math.max(1, product.stock);

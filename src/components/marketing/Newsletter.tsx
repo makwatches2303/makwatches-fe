@@ -4,6 +4,7 @@ import { useId, useState } from "react";
 
 import { cn } from "@/lib/utils";
 import { Button, Text } from "@/design-system";
+import { trackLeadCapture } from "@/lib/analytics";
 
 /**
  * Email capture.
@@ -60,6 +61,7 @@ export function Newsletter({
 
     try {
       await onSubmit(trimmed);
+      trackLeadCapture("email_newsletter", "newsletter_block");
       setStatus("done");
       setMessage("You are on the list.");
       setEmail("");

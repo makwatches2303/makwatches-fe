@@ -12,6 +12,7 @@ import { useUIStore } from "@/store/ui";
 import { ProductImage } from "./ProductImage";
 import { WishlistButton } from "./WishlistButton";
 import { AddToBagButton } from "./AddToBagButton";
+import { trackSelectItem } from "@/lib/analytics";
 
 /**
  * A product tile.
@@ -74,6 +75,7 @@ export function ProductCard({
         */}
         <Link
           href={productHref(product)}
+          onClick={() => trackSelectItem(product)}
           className="block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mak-accent"
         >
           {/* The card name is the accessible name for this link. */}
@@ -119,7 +121,10 @@ export function ProductCard({
           >
             <button
               type="button"
-              onClick={() => openQuickView(product.id)}
+              onClick={() => {
+                trackSelectItem(product);
+                openQuickView(product.id);
+              }}
               className={cn(
                 "min-h-9 sm:min-h-10 flex-1 border-t-2 border-mak-line bg-white px-2 py-2 sm:px-3 sm:py-2.5",
                 "font-display text-[10px] sm:text-mak-micro font-bold uppercase tracking-[0.04em] text-mak-ink truncate",
@@ -153,6 +158,7 @@ export function ProductCard({
           */}
           <Link
             href={productHref(product)}
+            onClick={() => trackSelectItem(product)}
             className="transition-colors duration-200 ease-mak hover:text-mak-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mak-accent"
           >
             {product.name}

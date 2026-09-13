@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { subscribeWhatsApp } from "@/lib/api/marketing";
+import { trackLeadCapture } from "@/lib/analytics";
 
 const DISMISS_KEY = "mak_phone_popup_dismissed";
 const SUBSCRIBED_KEY = "mak_phone_popup_subscribed";
@@ -82,6 +83,8 @@ export function PhoneCaptureModal() {
         name: name.trim() || undefined,
         source: "popup",
       });
+
+      trackLeadCapture("whatsapp_popup", "popup");
 
       try {
         localStorage.setItem(SUBSCRIBED_KEY, "true");

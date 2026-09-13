@@ -1,6 +1,8 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
+import { trackViewItem } from "@/lib/analytics";
 
 import {
   Badge,
@@ -40,6 +42,12 @@ export interface QuickViewProps {
 }
 
 export function QuickView({ product, open, onClose }: QuickViewProps) {
+  useEffect(() => {
+    if (open && product?.id) {
+      trackViewItem(product);
+    }
+  }, [open, product?.id]);
+
   if (!product) return null;
 
   const image = resolveProductImage(product);

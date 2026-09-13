@@ -40,6 +40,12 @@ import {
 } from "@/lib/api/checkout";
 import { describeAdjustments, syncCartToServer } from "@/lib/cart-sync";
 import { openRazorpay } from "@/lib/razorpay";
+import {
+  trackBeginCheckout,
+  trackAddShippingInfo,
+  trackAddPaymentInfo,
+  trackPurchase,
+} from "@/lib/analytics";
 
 import { CheckoutSummary } from "./CheckoutSummary";
 import { ShippingOptions } from "./ShippingOptions";
@@ -131,6 +137,16 @@ export function CheckoutFlow() {
   const [placed, setPlaced] = useState<PlacedOrder | null>(null);
 
   const signedIn = Boolean(user);
+
+  // --- GA4: Track begin_checkout once bag is ready -----------------------
+  const beginCheckoutTrackedRef = useRef(false);
+  useEffect(() => {
+    if (hydrated && lines.length > 0 && !beginCheckoutTrackedRef.current) {
+      beginCheckoutTrackedRef.current = true;
+      const subtotal = lines.reduce((sum, l) => sum + l.price * l.quantity, 0);
+      trackBeginCheckout(lines, subtotal, appliedCoupon?.code);
+    }
+  }, [hydrated, lines, appliedCoupon]);
 
   // --- 1. Push the bag to the server ------------------------------------
   //
@@ -285,7 +301,14 @@ export function CheckoutFlow() {
         if (options.length > 0) {
           const recommended = options.find((option) => option.recommended);
           const cheapest = [...options].sort((a, b) => a.charge - b.charge)[0];
-          setSelectedShipping(recommended ?? cheapest);
+          const initial = recommended ?? cheapest;
+          setSelectedShipping(initial);
+          trackAddShippingInfo(
+            initial,
+            (serverTotal ?? 0) + initial.charge,
+            lines,
+            appliedCoupon?.code
+          );
         }
       } catch {
         // Never fall back to a zero charge: that would ship at our expense and
@@ -297,7 +320,7 @@ export function CheckoutFlow() {
         setLoadingShipping(false);
       }
     },
-    []
+    [lines, serverTotal, appliedCoupon]
   );
 
   // Re-quote whenever the destination or the payment mode changes.
@@ -364,7 +387,14 @@ export function CheckoutFlow() {
     // COD is offered only where the carrier confirms it. Where we could not
     // reach the carrier at all, only prepaid is offered -- promising cash on
     // delivery we cannot fulfil is worse than not offering it.
-    setMethod(details?.cod ? "cod" : "razorpay");
+    const chosenMethod: PaymentMethod = details?.cod ? "cod" : "razorpay";
+    setMethod(chosenMethod);
+    trackAddPaymentInfo(
+      chosenMethod,
+      displayTotal ?? 0,
+      lines,
+      appliedCoupon?.code
+    );
 
     if (!usingSaved && saveAddress) {
       try {
@@ -461,6 +491,9 @@ export function CheckoutFlow() {
         // after re-verifying it. No amount is sent from here.
         shippingQuote: selectedShipping.quote,
       });
+
+      // Track successful purchase in GA4
+      trackPurchase(order);
 
       // Only now: the server holds the order, so the bag can go.
       setPlaced(order);
@@ -735,7 +768,15 @@ export function CheckoutFlow() {
               legend="Payment method"
               name="payment"
               value={method}
-              onChange={setMethod}
+              onChange={(nextMethod) => {
+                setMethod(nextMethod);
+                trackAddPaymentInfo(
+                  nextMethod,
+                  displayTotal ?? 0,
+                  lines,
+                  appliedCoupon?.code
+                );
+              }}
               options={[
                 {
                   value: "razorpay",
@@ -758,7 +799,15 @@ export function CheckoutFlow() {
               <ShippingOptions
                 options={shippingOptions}
                 selectedQuote={selectedShipping?.quote ?? null}
-                onSelect={setSelectedShipping}
+                onSelect={(option) => {
+                  setSelectedShipping(option);
+                  trackAddShippingInfo(
+                    option,
+                    displayTotal ?? 0,
+                    lines,
+                    appliedCoupon?.code
+                  );
+                }}
                 loading={loadingShipping}
                 error={shippingError}
                 onRetry={() => {

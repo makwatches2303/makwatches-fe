@@ -5,6 +5,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 
 import type { MediaRef, Product } from "@/lib/api/types";
 import { resolveProductImage } from "@/lib/media";
+import { trackAddToCart, trackRemoveFromCart, trackApplyCoupon } from "@/lib/analytics";
 
 /**
  * Cart state.
@@ -98,7 +99,8 @@ export const useCartStore = create<CartState>()(
       appliedCoupon: null,
       hydrated: false,
 
-      addLine: (product, quantity = 1, size) =>
+      addLine: (product, quantity = 1, size) => {
+        trackAddToCart(product, quantity, size);
         set((state) => {
           const key = lineKey(product.id, size);
           const existing = state.lines.find(
@@ -118,14 +120,22 @@ export const useCartStore = create<CartState>()(
               lineKey(l.productId, l.size) === key ? { ...l, quantity: next } : l
             ),
           };
-        }),
+        });
+      },
 
       removeLine: (productId, size) =>
-        set((state) => ({
-          lines: state.lines.filter(
-            (l) => lineKey(l.productId, l.size) !== lineKey(productId, size)
-          ),
-        })),
+        set((state) => {
+          const key = lineKey(productId, size);
+          const line = state.lines.find((l) => lineKey(l.productId, l.size) === key);
+          if (line) {
+            trackRemoveFromCart(line);
+          }
+          return {
+            lines: state.lines.filter(
+              (l) => lineKey(l.productId, l.size) !== key
+            ),
+          };
+        }),
 
       setQuantity: (productId, quantity, size) =>
         set((state) => {
@@ -182,7 +192,10 @@ export const useCartStore = create<CartState>()(
           };
         }),
 
-      applyCoupon: (coupon) => set({ appliedCoupon: coupon }),
+      applyCoupon: (coupon) => {
+        trackApplyCoupon(coupon.code, coupon.discountAmount);
+        set({ appliedCoupon: coupon });
+      },
 
       removeCoupon: () => set({ appliedCoupon: null }),
 

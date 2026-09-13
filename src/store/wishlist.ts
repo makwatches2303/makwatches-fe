@@ -5,6 +5,7 @@ import { persist, createJSONStorage } from "zustand/middleware";
 
 import type { MediaRef, Product } from "@/lib/api/types";
 import { resolveProductImage } from "@/lib/media";
+import { trackAddToWishlist } from "@/lib/analytics";
 
 /**
  * Wishlist state.
@@ -61,16 +62,17 @@ export const useWishlistStore = create<WishlistState>()(
             lines: state.lines.filter((l) => l.productId !== product.id),
           }));
         } else {
+          trackAddToWishlist(product);
           set((state) => ({ lines: [...state.lines, toLine(product)] }));
         }
       },
 
-      add: (product) =>
-        set((state) =>
-          state.lines.some((l) => l.productId === product.id)
-            ? state
-            : { lines: [...state.lines, toLine(product)] }
-        ),
+      add: (product) => {
+        if (!get().lines.some((l) => l.productId === product.id)) {
+          trackAddToWishlist(product);
+          set((state) => ({ lines: [...state.lines, toLine(product)] }));
+        }
+      },
 
       remove: (productId) =>
         set((state) => ({
