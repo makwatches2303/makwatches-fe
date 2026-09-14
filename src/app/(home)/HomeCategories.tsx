@@ -1,65 +1,49 @@
 import { Container, Section, SectionHeader } from "@/design-system";
-import { CategoryTiles, type CategoryTile } from "@/components/marketing";
-import { toMediaRef } from "@/lib/media";
+import { CategoryShowcase } from "@/components/marketing";
+import { resolveCategoryFrontDoors } from "@/lib/category-front-doors";
 import type { Category } from "@/lib/api/types";
-import type { CategoryTilesContent } from "@/lib/api/storefront";
-import { resolveCategoryTiles } from "@/lib/category-tiles";
 
 /**
- * "Shop by category".
+ * "Shop by category" on the homepage.
  *
- * Which tiles appear, in what order, with what label and image, is
- * admin-configured — see the storefront document's categoryTiles. The default
- * derives one tile per subcategory from the live tree, so a fresh install shows
- * the whole catalogue without curation.
+ * ## What changed, and why the copy is no longer admin-managed
  *
- * A tile stores a reference into the category tree, never a copy and never a
- * product id. A reference that no longer resolves is omitted rather than
- * rendered broken or silently swapped for a different category.
+ * This band used to derive one tile per *subcategory* from the live tree, so
+ * the homepage opened on "Metal watch / Leather watch / Silver watch" — a
+ * shopper's first decision framed as a choice of strap material. It now shows
+ * the same five front doors as /collections (Men, Women, Kids, Wall Clocks,
+ * Smart Watches), resolved the same way, from the same module. Sharing that
+ * definition is the point: the two surfaces cannot drift apart.
  *
- * A server component.
+ * With the tile *selection* no longer coming from `storefront.categoryTiles`,
+ * its `title`, `eyebrow` and `autoFromCategories` fields no longer describe
+ * what renders here, so the heading is set in code rather than read from a
+ * field that now means something else. `enabled` is still honoured — turning
+ * the section off from the admin still works, which is the part of that config
+ * that still applies.
+ *
+ * A server component, and an async one: it resolves the five doors against the
+ * live tree itself rather than making the page assemble them.
  */
 
 export interface HomeCategoriesProps {
-  content: CategoryTilesContent;
-  /** The live category tree, which references resolve against. */
+  /** The live category tree the front doors resolve against. */
   categories: Category[];
-  /** Product totals keyed by top-level category name. */
+  /** Product totals keyed by top-level category name, for the aside. */
   counts?: Record<string, number>;
-  /** Stand-in images for subcategories the admin has not given one, keyed by
-   * categoryImageKey. */
-  fallbackImages?: Record<string, string>;
+  /** The admin's section toggle, from storefront.categoryTiles.enabled. */
+  enabled?: boolean;
 }
 
-export function HomeCategories({
-  content,
+export async function HomeCategories({
   categories,
   counts = {},
-  fallbackImages = {},
+  enabled = true,
 }: HomeCategoriesProps) {
-  const { tiles: resolved, warnings } = resolveCategoryTiles(
-    content,
-    categories,
-    fallbackImages
-  );
+  if (!enabled) return null;
 
-  // Broken references are a merchandising problem, not a rendering one: the
-  // tile is already omitted, and this makes it findable in the server log
-  // rather than only in the admin's warnings list.
-  if (warnings.length > 0) {
-    console.warn(
-      `[storefront] ${warnings.length} category tile(s) could not be resolved: ` +
-        warnings.map((w) => `${w.tileId} (${w.message})`).join(", ")
-    );
-  }
-
-  if (!content.enabled || resolved.length === 0) return null;
-
-  const tiles: CategoryTile[] = resolved.map((tile) => ({
-    label: tile.label,
-    href: tile.href,
-    image: toMediaRef(tile.image, tile.label),
-  }));
+  const showcase = await resolveCategoryFrontDoors(categories);
+  if (showcase.length === 0) return null;
 
   const total = Object.values(counts).reduce((sum, n) => sum + n, 0);
 
@@ -67,8 +51,8 @@ export function HomeCategories({
     <Section id="categories" spacing="default">
       <Container>
         <SectionHeader
-          eyebrow={content.eyebrow}
-          title={content.title}
+          eyebrow="Shop by category"
+          title="Category"
           aside={
             total > 0
               ? `${total.toLocaleString("en-IN")} pieces across ${categories.length} houses`
@@ -76,7 +60,7 @@ export function HomeCategories({
           }
           className="mb-9"
         />
-        <CategoryTiles tiles={tiles} />
+        <CategoryShowcase categories={showcase} />
       </Container>
     </Section>
   );

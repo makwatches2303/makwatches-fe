@@ -1,117 +1,109 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 
 import {
   Container,
   EmptyState,
   Eyebrow,
   Heading,
-  RuleGrid,
   Section,
   Text,
 } from "@/design-system";
-import { fetchCategories, fetchCollections } from "@/lib/api/server";
+import { CategoryShowcase } from "@/components/marketing";
+import { fetchCategories, isApiConfigured } from "@/lib/api/server";
+import { resolveCategoryFrontDoors } from "@/lib/category-front-doors";
 
 /**
- * The collections index.
+ * Shop by Category.
  *
- * Collections are an editorial grouping the catalog does not yet populate --
- * /api/v1/collections derives them from a `collection` field no product
- * carries. Rather than render an empty page, this falls back to the real
- * category tree, which is the closest true grouping that exists, and says so.
+ * What this replaced: a flat list of text rows, one per subcategory, derived by
+ * falling back from an editorial "collections" grouping no product carries. It
+ * read as a sitemap -- eleven equally-weighted links named after strap
+ * materials ("Metal Watch", "Leather Watch", "Silver Watch"). A shopper
+ * arriving at a watch retailer wants a handful of real front doors, each with a
+ * photograph behind it.
+ *
+ * ## Nothing here is invented
+ *
+ * The five front doors come from @/lib/category-front-doors, shared with the
+ * homepage band so the two cannot drift. They are a *display order*, not a
+ * content system: each names a category and is resolved against the live tree
+ * from GET /categories at render time:
+ *
+ *   - a name that resolves gets its real route, its real product count, and a
+ *     real photograph (the admin's own subcategory image where one is set,
+ *     otherwise borrowed from the newest in-stock product in that scope);
+ *   - a name that does not resolve renders as an inert "coming soon" panel with
+ *     no href at all -- never a link to a page that would 404, and never one
+ *     quietly pointed somewhere unrelated.
+ *
+ * No product ids, no invented slugs, no second category store. Rename a
+ * category in the admin and the card follows it; create the missing one and its
+ * card becomes a link with no code change.
+ *
+ * ## What the catalogue actually has today
+ *
+ * Men and Women are top-level categories. "Wall Clock" and "Smart Watch" are
+ * subcategories existing under *both* parents, so they route to the unscoped
+ * /category/<slug>, which spans both -- the parent-scoped form would hide half
+ * the stock. There is no Kids category at any level, which is why that card
+ * renders inert rather than linked.
+ *
+ * A server component.
  */
 
 export const metadata: Metadata = {
-  title: "Collections",
-  description: "Browse MAK Watches by collection.",
+  title: "Shop by Category",
+  description:
+    "Browse MAK Watches by category - watches for men and women, smart watches and wall clocks, with the full catalogue behind every card.",
   alternates: { canonical: "/collections" },
 };
 
 export const revalidate = 0;
 
-function slugify(value: string): string {
-  return value.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
-}
-
-function titleCase(value: string): string {
-  return value.replace(/\b\w/g, (c) => c.toUpperCase());
-}
-
 export default async function CollectionsPage() {
-  const [collections, categories] = await Promise.all([
-    fetchCollections(),
-    fetchCategories(),
-  ]);
-
-  const hasCollections = collections.length > 0;
-
-  // Deduplicate subcategories across all categories into a single unified list
-  const subcategoryMap = new Map<string, { name: string; href: string; count?: number }>();
-
-  for (const category of categories) {
-    for (const sub of category.subcategories ?? []) {
-      const slug = slugify(sub.name);
-      if (!subcategoryMap.has(slug)) {
-        subcategoryMap.set(slug, {
-          name: titleCase(sub.name),
-          href: `/category/${slug}`,
-          count: undefined,
-        });
-      }
-    }
+  if (!isApiConfigured()) {
+    return (
+      <div className="mak bg-mak-bg">
+        <Section spacing="loose">
+          <Container>
+            <EmptyState
+              title="The storefront is not configured."
+              description="NEXT_PUBLIC_API_BASE_URL is not set, so categories cannot be reached."
+            />
+          </Container>
+        </Section>
+      </div>
+    );
   }
 
-  const entries = hasCollections
-    ? collections.map((c) => ({
-        name: c.name,
-        href: `/collections/${c.slug}`,
-        count: c.count,
-      }))
-    : Array.from(subcategoryMap.values());
+  const categories = await fetchCategories();
+  // The same five front doors the homepage band shows, resolved the same way.
+  // See @/lib/category-front-doors -- defined once so the two cannot drift.
+  const showcase = await resolveCategoryFrontDoors(categories);
 
   return (
     <div className="mak bg-mak-bg">
-      <Section spacing="tight" className="border-b-2 border-mak-line">
+      {/* Introduction */}
+      <Section tone="ink" spacing="default" className="border-b-2 border-mak-line">
         <Container>
-          <Eyebrow withRule className="mb-4">
-            Collections
-          </Eyebrow>
-          <Heading level="display" as="h1">
-            The collections.
-          </Heading>
-          <Text size="lead" tone="muted" className="mt-4 max-w-2xl">
-            Explore the complete MAK Watches collection by category.
-          </Text>
+          <div className="max-w-3xl">
+            <Eyebrow withRule tone="accent" className="mb-5">
+              Shop by category
+            </Eyebrow>
+            <Heading level="display" as="h1" tone="inverse">
+              Shop by Category
+            </Heading>
+            <Text size="lead" tone="inverse" className="mt-5 max-w-xl opacity-80">
+              Find the right timepiece for every style, occasion and generation.
+            </Text>
+          </div>
         </Container>
       </Section>
 
+      {/* The shelf */}
       <Section spacing="default">
         <Container>
-          {entries.length === 0 ? (
-            <EmptyState
-              title="Nothing to browse yet."
-              description="Once products are grouped into collections they will appear here."
-            />
-          ) : (
-            <RuleGrid cols={{ base: 1, md: 2, lg: 3 }}>
-              {entries.map((entry) => (
-                <Link
-                  key={entry.href}
-                  href={entry.href}
-                  className="group flex min-h-32 flex-col justify-between p-7 no-underline transition-colors hover:bg-mak-surface focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-mak-accent"
-                >
-                  <span className="font-display text-mak-title font-extrabold tracking-[-0.025em] text-mak-ink group-hover:text-mak-accent">
-                    {entry.name}
-                  </span>
-                  {typeof entry.count === "number" ? (
-                    <span className="mt-3 text-mak-label uppercase tracking-[0.14em] text-mak-muted">
-                      {entry.count} {entry.count === 1 ? "piece" : "pieces"}
-                    </span>
-                  ) : null}
-                </Link>
-              ))}
-            </RuleGrid>
-          )}
+          <CategoryShowcase categories={showcase} />
         </Container>
       </Section>
     </div>

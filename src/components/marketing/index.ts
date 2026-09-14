@@ -21,6 +21,11 @@ export {
   type CraftPanel,
 } from "./CraftScroller";
 export { StatGrid, type StatGridProps, type Stat } from "./StatGrid";
+export {
+  CategoryShowcase,
+  type CategoryShowcaseProps,
+  type ShowcaseCategory,
+} from "./CategoryShowcase";
 export { PosterCTA, type PosterCTAProps } from "./PosterCTA";
 export { Newsletter, type NewsletterProps } from "./Newsletter";
 export {

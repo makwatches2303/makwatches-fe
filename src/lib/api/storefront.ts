@@ -363,7 +363,10 @@ export const DEFAULT_STOREFRONT: StorefrontContent = {
   },
   house: {
     enabled: false,
-    eyebrow: "The MAK house",
+    // Mirrors models.DefaultStorefrontContent: "About MAK Watches", not "The
+    // MAK house" -- MAK is a retailer, and "house" reads as a claim to make the
+    // watches. Only the default changes; a stored admin value still wins.
+    eyebrow: "About MAK Watches",
     title: "",
     body: "",
     cta: { label: "Own one", href: "/shop" },

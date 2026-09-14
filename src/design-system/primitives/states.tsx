@@ -51,8 +51,10 @@ export function Skeleton({
 export function ProductCardSkeleton() {
   return (
     <div className="flex flex-col bg-white">
-      <Skeleton variant="image" />
-      <div className="flex flex-col gap-2 p-3 sm:p-4 pb-3.5 sm:pb-5">
+      {/* 4:5 on mobile, square from sm -- ProductCard's own responsive image
+          well. A skeleton at the wrong ratio lets the grid jump on load. */}
+      <Skeleton variant="image" className="aspect-4/5 sm:aspect-square" />
+      <div className="flex flex-col gap-2 p-2.5 sm:p-4 pb-3 sm:pb-5">
         <Skeleton variant="text" className="h-4 sm:h-4.5 w-3/4" />
         <Skeleton variant="text" className="h-3 w-1/3" />
         <Skeleton variant="text" className="mt-2 sm:mt-3 h-5 sm:h-6 w-2/5" />

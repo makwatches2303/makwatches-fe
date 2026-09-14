@@ -5,7 +5,6 @@ import {
   AdminPreviewToolbar,
   AdminSectionMarkup,
   CraftScroller,
-  EditorialGallery,
   StatGrid,
   StoryBlock,
   TrustStrip,
@@ -14,7 +13,6 @@ import { isRenderableHero } from "@/lib/api/home-content";
 import {
   fetchCategories,
   fetchCategoryCounts,
-  fetchCategoryFallbackImages,
   fetchHomeContent,
   fetchProductById,
   fetchRailProducts,
@@ -78,22 +76,7 @@ export default async function HomePage() {
     ...storefront.rails.map((rail) => fetchRailProducts(rail)),
   ]);
 
-  // Subcategories the admin has not given an image: borrow one from a product
-  // in that subcategory so the tile shows the goods rather than the branded
-  // "no image" placeholder. Only requested for the ones that need it.
-  const imagelessSubcategories = categories.flatMap((category) =>
-    (category.subcategories ?? [])
-      .filter((sub) => sub.name?.trim() && !sub.imageUrl)
-      .map((sub) => ({
-        mainCategory: category.name,
-        subcategory: sub.name.trim(),
-      }))
-  );
-
-  const [counts, categoryFallbackImages] = await Promise.all([
-    fetchCategoryCounts(categories.map((c) => c.name)),
-    fetchCategoryFallbackImages(imagelessSubcategories),
-  ]);
+  const counts = await fetchCategoryCounts(categories.map((c) => c.name));
 
   const [heroSlide, ...remainingSlides] = homeContent.heroSlides;
 
@@ -158,6 +141,29 @@ export default async function HomePage() {
         </AdminSectionMarkup>
       ) : null}
 
+      {storefront.craft.enabled && storefront.craft.panels.length > 0 ? (
+        <AdminSectionMarkup
+          sectionId="craft"
+          sectionNumber="07"
+          title="Story 1 · Watchmaking Craft & Specs"
+          locationBadge="Screen 5 · Mid-Page Feature"
+        >
+          <CraftScroller
+            panels={storefront.craft.panels.map((panel, index) => ({
+              number: panel.number,
+              title: panel.title,
+              body: panel.body,
+              specs: panel.specs,
+              image:
+                toMediaRef(panel.image, "") ??
+                craftImages[index] ??
+                craftImages[0] ??
+                null,
+            }))}
+          />
+        </AdminSectionMarkup>
+      ) : null}
+
       {storefront.marquee.enabled && marqueeTerms.length > 0 ? (
         <AdminSectionMarkup
           sectionId="marquee"
@@ -211,10 +217,9 @@ export default async function HomePage() {
         locationBadge="Screen 3 · Main Categories"
       >
         <HomeCategories
-          content={storefront.categoryTiles}
           categories={categories}
           counts={counts}
-          fallbackImages={categoryFallbackImages}
+          enabled={storefront.categoryTiles.enabled}
         />
       </AdminSectionMarkup>
 
@@ -260,29 +265,6 @@ export default async function HomePage() {
         })}
       </AdminSectionMarkup>
 
-      {storefront.craft.enabled && storefront.craft.panels.length > 0 ? (
-        <AdminSectionMarkup
-          sectionId="craft"
-          sectionNumber="07"
-          title="Story 1 · Watchmaking Craft & Specs"
-          locationBadge="Screen 5 · Mid-Page Feature"
-        >
-          <CraftScroller
-            panels={storefront.craft.panels.map((panel, index) => ({
-              number: panel.number,
-              title: panel.title,
-              body: panel.body,
-              specs: panel.specs,
-              image:
-                toMediaRef(panel.image, "") ??
-                craftImages[index] ??
-                craftImages[0] ??
-                null,
-            }))}
-          />
-        </AdminSectionMarkup>
-      ) : null}
-
       <AdminSectionMarkup
         sectionId="house"
         sectionNumber="08"
@@ -308,19 +290,6 @@ export default async function HomePage() {
             fallbackSlide={storySlide}
           />
         )}
-      </AdminSectionMarkup>
-
-      <AdminSectionMarkup
-        sectionId="gallery"
-        sectionNumber="09"
-        title="Lookbook · Instagram & Lifestyle Wall"
-        locationBadge="Screen 7 · Photo Wall"
-      >
-        <EditorialGallery
-          images={homeContent.gallery
-            .filter((image) => image.url)
-            .map((image) => ({ url: image.url!, alt: image.alt }))}
-        />
       </AdminSectionMarkup>
 
       {storefront.poster.enabled ? (

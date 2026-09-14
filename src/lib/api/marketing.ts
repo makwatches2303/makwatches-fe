@@ -25,6 +25,29 @@ export async function subscribeWhatsApp(
   return response.data;
 }
 
+export interface SubscribeEmailPayload {
+  email: string;
+  name?: string;
+  source?: string;
+}
+
+/**
+ * Add an email address to the marketing list.
+ *
+ * Distinct from subscribeWhatsApp on purpose: that one dispatches a WhatsApp
+ * welcome template, which must never fire for someone who only gave an email
+ * address. The backend keeps them apart for the same reason.
+ */
+export async function subscribeEmail(
+  payload: SubscribeEmailPayload
+): Promise<{ success: boolean; message: string }> {
+  const response = await apiClient().post<{ success: boolean; message: string }>(
+    "/api/v1/subscribers/email",
+    payload
+  );
+  return response.data;
+}
+
 export interface TrackCartPayload {
   cartToken?: string;
   phone: string;
