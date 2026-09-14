@@ -117,6 +117,33 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "origin-when-cross-origin" },
         ],
       },
+      // The OAuth hand-off pages, and login itself, must never be served
+      // from cache. Each `export const dynamic = "force-dynamic"` on these
+      // pages didn't change their build output (still prerendered "○
+      // Static" on this Next.js version -- see the comment on each page),
+      // so this header is the part that actually takes effect: it overrides
+      // whatever Cache-Control the framework would otherwise send, which is
+      // what the CDN/edge actually keys its caching decision on.
+      //
+      // Response headers on these routes were directly observed serving
+      // `x-vercel-cache: STALE` with `age` in the hundreds of seconds --
+      // exactly the "a stale old-looking page flashes for a second mid-login"
+      // report, and a real bug for auth/google/callback specifically: it
+      // forwards a one-time Google authorization code to the backend, so a
+      // cached copy is not just visually stale, it's serving a possibly
+      // outdated forwarding bundle for a code that only makes sense once.
+      {
+        source: "/login",
+        headers: [{ key: "Cache-Control", value: "no-store, must-revalidate" }],
+      },
+      {
+        source: "/auth/callback",
+        headers: [{ key: "Cache-Control", value: "no-store, must-revalidate" }],
+      },
+      {
+        source: "/auth/google/callback",
+        headers: [{ key: "Cache-Control", value: "no-store, must-revalidate" }],
+      },
     ];
   },
 };

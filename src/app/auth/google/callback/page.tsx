@@ -3,6 +3,15 @@
 import { useEffect, useState } from "react";
 import { getApiBaseUrl } from "@/lib/env";
 
+// Never serve a cached shell of this page. It exists purely to forward
+// Google's one-time authorization code+state to the backend
+// (window.location.replace below) -- a stale cached copy is not just an
+// "old UI flash", it can forward a fresh code through whatever logic an
+// OLDER deployed bundle had. See auth/callback/page.tsx for the same
+// STALE-cache evidence (x-vercel-cache: STALE, age in the hundreds of
+// seconds) on this exact route.
+export const dynamic = "force-dynamic";
+
 export default function GoogleCallbackProxyPage() {
   const [processing, setProcessing] = useState(true);
   const [error, setError] = useState<string | null>(null);

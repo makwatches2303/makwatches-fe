@@ -15,6 +15,13 @@ import {
   Divider,
 } from "@/design-system";
 
+// Never serve a cached shell of this page. It gates on cookie state
+// (middleware.ts bounces an already-authenticated visitor away from here),
+// and CDN edge caching of the pre-auth shell is exactly what produced the
+// "stale old page flashes for a second" report during the OAuth redirect --
+// see auth/callback and auth/google/callback for the same fix.
+export const dynamic = "force-dynamic";
+
 function GoogleIcon() {
   return (
     <svg className="h-5 w-5" viewBox="0 0 533.5 544.3" aria-hidden="true">

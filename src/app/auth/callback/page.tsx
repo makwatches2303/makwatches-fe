@@ -4,6 +4,15 @@ import { useEffect, useState } from "react";
 import Cookies from "js-cookie";
 import { apiUrl } from "@/lib/env";
 
+// Never serve a cached shell of this page. It reads one-time query params
+// (an exchange code, or an error) that only make sense the instant Google's
+// redirect lands here -- a CDN-cached copy from a previous visit is not just
+// stale, it's actively wrong. Response headers on this route were observed
+// serving `x-vercel-cache: STALE` with `age` in the hundreds of seconds,
+// which is the "old UI flashes for a second mid-login" report: an edge
+// briefly serves last deploy's cached shell before revalidating.
+export const dynamic = "force-dynamic";
+
 type JwtClaims = { userId?: string; role?: string };
 
 function decodeJwtPayload(token: string): JwtClaims | null {
