@@ -12,6 +12,7 @@ import {
   Field,
   Input,
   LoadingState,
+  Modal,
   RadioCards,
   Text,
   formatPrice,
@@ -119,6 +120,8 @@ export function CheckoutFlow() {
   const [saveAddress, setSaveAddress] = useState(true);
   /** Id of the saved address currently open in the form, or null. */
   const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
+  /** Final "are you sure" before the order is actually placed. */
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [errors, setErrors] = useState<Partial<Record<keyof AddressInput, string>>>({});
 
   const [serviceability, setServiceability] =
@@ -932,8 +935,13 @@ export function CheckoutFlow() {
             <Divider className="my-9" />
 
             <div className="flex flex-wrap items-center gap-4">
+              {/* Confirm before committing. Placing an order is not undoable
+                * from here -- a COD order is dispatched to the courier, and a
+                * prepaid one opens Razorpay and takes money -- so the last
+                * click gets a deliberate second look at what is about to
+                * happen, rather than firing straight off a single press. */}
               <Button
-                onClick={() => void submitOrder()}
+                onClick={() => setConfirmOpen(true)}
                 disabled={placing || !method || !selectedShipping}
               >
                 {placing
@@ -962,6 +970,68 @@ export function CheckoutFlow() {
         shippingLabel={selectedShipping?.courierName}
         className="lg:sticky lg:top-24 lg:self-start"
       />
+
+      <Modal
+        open={confirmOpen}
+        onClose={() => setConfirmOpen(false)}
+        title={method === "cod" ? "Place this order?" : "Continue to payment?"}
+        size="sm"
+      >
+        <div className="flex flex-col gap-5">
+          <Text tone="muted">
+            {method === "cod"
+              ? "We'll send this to the courier and you'll pay them on delivery."
+              : "This opens Razorpay's secure window to take the payment."}
+          </Text>
+
+          <dl className="flex flex-col gap-2 border-y-2 border-mak-line py-4 text-mak-small">
+            <div className="flex items-start justify-between gap-4">
+              <dt className="text-mak-ink/70">Total</dt>
+              <dd className="font-display font-extrabold text-mak-ink">
+                {formatPrice(displayTotal ?? 0)}
+              </dd>
+            </div>
+            <div className="flex items-start justify-between gap-4">
+              <dt className="text-mak-ink/70">
+                {lines.length === 1 ? "Item" : "Items"}
+              </dt>
+              <dd className="text-right text-mak-ink">
+                {lines.reduce((n, l) => n + l.quantity, 0)}
+              </dd>
+            </div>
+            {effectiveAddress ? (
+              <div className="flex items-start justify-between gap-4">
+                <dt className="shrink-0 text-mak-ink/70">Delivering to</dt>
+                <dd className="text-right text-mak-ink">
+                  {effectiveAddress.name} — {effectiveAddress.street},{" "}
+                  {effectiveAddress.city} {effectiveAddress.zipCode}
+                </dd>
+              </div>
+            ) : null}
+            <div className="flex items-start justify-between gap-4">
+              <dt className="text-mak-ink/70">Payment</dt>
+              <dd className="text-right text-mak-ink">
+                {method === "cod" ? "Cash on delivery" : "Card / UPI (Razorpay)"}
+              </dd>
+            </div>
+          </dl>
+
+          <div className="flex flex-wrap gap-3">
+            <Button
+              onClick={() => {
+                setConfirmOpen(false);
+                void submitOrder();
+              }}
+              disabled={placing}
+            >
+              {method === "cod" ? "Yes, place order" : "Yes, continue"}
+            </Button>
+            <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
+              Go back
+            </Button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }
