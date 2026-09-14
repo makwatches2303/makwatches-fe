@@ -22,6 +22,7 @@ import { selectAppliedCoupon, useCartStore } from "@/store/cart";
 import { ApiError } from "@/lib/api/client";
 import {
   createAddress,
+  updateAddress,
   formatAddress,
   isDeliverable,
   listAddresses,
@@ -116,6 +117,8 @@ export function CheckoutFlow() {
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
   const [draft, setDraft] = useState<AddressInput>(EMPTY_ADDRESS);
   const [saveAddress, setSaveAddress] = useState(true);
+  /** Id of the saved address currently open in the form, or null. */
+  const [editingAddressId, setEditingAddressId] = useState<string | null>(null);
   const [errors, setErrors] = useState<Partial<Record<keyof AddressInput, string>>>({});
 
   const [serviceability, setServiceability] =
@@ -213,11 +216,26 @@ export function CheckoutFlow() {
     };
   }, [signedIn]);
 
-  const usingSaved = selectedAddressId !== null && selectedAddressId !== "new";
   const selectedAddress = useMemo(
     () => addresses.find((a) => a.id === selectedAddressId) ?? null,
     [addresses, selectedAddressId]
   );
+
+  /**
+   * True while a saved address is being corrected in place.
+   *
+   * Editing borrows the same form the "deliver somewhere else" path uses --
+   * the fields are identical, and a second copy of them would be one more
+   * thing to keep in step. What differs is only where the result goes on
+   * submit: PUT /addresses/:id rather than POST /addresses.
+   */
+  const editing = editingAddressId !== null;
+
+  // Editing shows the form, so it is not "using saved" for the purposes of
+  // which fields the order reads from -- the point of editing is that the
+  // typed values win over what is stored.
+  const usingSaved =
+    !editing && selectedAddressId !== null && selectedAddressId !== "new";
 
   /** The address the order will actually ship to, whichever way it was given. */
   const effectiveAddress: AddressInput | null = usingSaved
@@ -233,6 +251,33 @@ export function CheckoutFlow() {
         }
       : null
     : draft;
+
+  /** Load a saved address into the form to correct it in place. */
+  function startEditingAddress() {
+    if (!selectedAddress) return;
+    setDraft({
+      name: selectedAddress.name,
+      street: selectedAddress.street,
+      city: selectedAddress.city,
+      state: selectedAddress.state,
+      zipCode: selectedAddress.zipCode,
+      country: selectedAddress.country,
+      phone: selectedAddress.phone,
+    });
+    setEditingAddressId(selectedAddress.id);
+    setErrors({});
+    // The stored pincode is re-checked on submit like any other, so a
+    // serviceability result for the old one must not carry over.
+    setServiceability(null);
+    setPincodeMessage(null);
+  }
+
+  function cancelEditingAddress() {
+    setEditingAddressId(null);
+    setErrors({});
+    setServiceability(null);
+    setPincodeMessage(null);
+  }
 
   // --- 2. Serviceability -------------------------------------------------
   const verifyPincode = useCallback(
@@ -396,7 +441,28 @@ export function CheckoutFlow() {
       appliedCoupon?.code
     );
 
-    if (!usingSaved && saveAddress) {
+    if (editingAddressId) {
+      // Correcting an address already in the book: write it back rather than
+      // adding a near-duplicate entry.
+      try {
+        const saved = await updateAddress(editingAddressId, {
+          ...draft,
+          isDefault: selectedAddress?.isDefault ?? false,
+        });
+        setAddresses((current) =>
+          current.map((a) => (a.id === saved.id ? saved : a))
+        );
+        setSelectedAddressId(saved.id);
+        setEditingAddressId(null);
+      } catch {
+        // Same reasoning as the create path below: the book is a
+        // convenience, the order still ships to what was typed.
+        toast(
+          "We could not update this address in your account, but your order will still use it.",
+          { tone: "warning" }
+        );
+      }
+    } else if (!usingSaved && saveAddress) {
       try {
         const created = await createAddress({
           ...draft,
@@ -588,31 +654,61 @@ export function CheckoutFlow() {
             </h2>
 
             {addresses.length > 0 ? (
-              <RadioCards
-                legend="Saved addresses"
-                name="address"
-                value={selectedAddressId}
-                onChange={(value) => {
-                  setSelectedAddressId(value);
-                  setErrors({});
-                  setServiceability(null);
-                  setPincodeMessage(null);
-                }}
-                options={[
-                  ...addresses.map((address) => ({
-                    value: address.id,
-                    label: address.name,
-                    description: formatAddress(address),
-                    meta: address.isDefault ? "Default" : undefined,
-                  })),
-                  {
-                    value: "new",
-                    label: "Deliver somewhere else",
-                    description: "Enter a new address.",
-                  },
-                ]}
-                className="mb-8"
-              />
+              <div className="mb-8">
+                <RadioCards
+                  legend="Saved addresses"
+                  name="address"
+                  value={editing ? editingAddressId : selectedAddressId}
+                  onChange={(value) => {
+                    setSelectedAddressId(value);
+                    setEditingAddressId(null);
+                    setErrors({});
+                    setServiceability(null);
+                    setPincodeMessage(null);
+                  }}
+                  options={[
+                    ...addresses.map((address) => ({
+                      value: address.id,
+                      label: address.name,
+                      description: formatAddress(address),
+                      meta: address.isDefault ? "Default" : undefined,
+                    })),
+                    {
+                      value: "new",
+                      label: "Deliver somewhere else",
+                      description: "Enter a new address.",
+                    },
+                  ]}
+                />
+
+                {/* An address typed once at checkout is the one a shopper
+                  * comes back to, typos and all -- so it has to be
+                  * correctable from here. The alternative was adding a second
+                  * near-identical entry to the book just to fix a house
+                  * number. */}
+                {usingSaved && selectedAddress ? (
+                  <button
+                    type="button"
+                    onClick={startEditingAddress}
+                    className="mt-3 font-display text-mak-small font-extrabold text-mak-accent underline-offset-4 hover:underline"
+                  >
+                    Edit this address
+                  </button>
+                ) : null}
+
+                {editing ? (
+                  <p className="mt-3 flex flex-wrap items-center gap-3 text-mak-small text-mak-ink/70">
+                    <span>Editing your saved address.</span>
+                    <button
+                      type="button"
+                      onClick={cancelEditingAddress}
+                      className="font-display font-extrabold text-mak-accent underline-offset-4 hover:underline"
+                    >
+                      Cancel
+                    </button>
+                  </p>
+                ) : null}
+              </div>
             ) : null}
 
             {!usingSaved ? (
@@ -713,11 +809,15 @@ export function CheckoutFlow() {
                   </Field>
                 </div>
 
-                <Checkbox
-                  checked={saveAddress}
-                  onChange={(e) => setSaveAddress(e.target.checked)}
-                  label="Save this address to my account"
-                />
+                {/* Meaningless while editing: the address is already in the
+                  * book, and submitting writes the correction back to it. */}
+                {!editing ? (
+                  <Checkbox
+                    checked={saveAddress}
+                    onChange={(e) => setSaveAddress(e.target.checked)}
+                    label="Save this address to my account"
+                  />
+                ) : null}
               </div>
             ) : null}
 
