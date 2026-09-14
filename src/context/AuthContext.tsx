@@ -284,13 +284,20 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const logout = () => {
-    if (role) {
-      const tokenKey = role === "customer" ? "customerToken" : "adminToken";
-      Cookies.remove(tokenKey);
-      localStorage.removeItem(tokenKey);
-      if (role === "admin") {
-        sessionStorage.removeItem("adminAuthToken");
-      }
+    // Clear both unconditionally, never just the one matching `role`.
+    // An admin-role account holds both cookies (see login() above and
+    // auth/callback/page.tsx), so removing only "adminToken" left
+    // "customerToken" behind -- middleware would still treat the session as
+    // live and "log out" would appear to do nothing. Clearing a cookie that
+    // was never set is a no-op, so this is safe for a plain customer too.
+    Cookies.remove("customerToken");
+    Cookies.remove("adminToken");
+    try {
+      localStorage.removeItem("customerToken");
+      localStorage.removeItem("adminToken");
+      sessionStorage.removeItem("adminAuthToken");
+    } catch {
+      // ignore storage errors
     }
     setUser(null);
     setRole(null);

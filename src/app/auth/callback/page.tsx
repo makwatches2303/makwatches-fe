@@ -79,11 +79,21 @@ export default function AuthCallbackPage() {
       const userId = String(claims.userId || "");
 
       const isAdmin = role === "admin" || role === "administrator";
-      const tokenKey = isAdmin ? "adminToken" : "customerToken";
       try {
-        Cookies.set(tokenKey, token, { expires: 7 });
-        localStorage.setItem(tokenKey, token);
-        if (isAdmin) sessionStorage.setItem("adminAuthToken", token);
+        // An admin-role account gets BOTH cookies, matching what
+        // AuthContext.login already does on the password path. This page
+        // used to set only "adminToken" for them, so signing in with Google
+        // on an admin account left no "customerToken" -- and every visit to
+        // /account, /orders or /cart was bounced to /login, because the
+        // shopper-facing routes are gated on a shopper session. The account
+        // still needs to browse and buy like anyone else.
+        Cookies.set("customerToken", token, { expires: 7 });
+        localStorage.setItem("customerToken", token);
+        if (isAdmin) {
+          Cookies.set("adminToken", token, { expires: 7 });
+          localStorage.setItem("adminToken", token);
+          sessionStorage.setItem("adminAuthToken", token);
+        }
         if (userId) localStorage.setItem("userId", userId);
         sessionStorage.setItem("mak_auth_toast", "You have successfully signed in. Welcome back!");
       } catch {
