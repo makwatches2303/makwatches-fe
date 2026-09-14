@@ -301,8 +301,43 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }
     setUser(null);
     setRole(null);
-    // Admin has its own separate app now; there is no /admin/login here.
-    router.push("/login");
+
+    /*
+      A full-document replace, not a client-side route change.
+
+      Three things had to be true at once, and only this gets all three:
+
+      - **It must actually navigate.** `router.replace("/")` followed by
+        `router.refresh()` did not: the refresh aborts the pending transition,
+        so the visitor stayed on /account staring at the signed-out empty
+        state. Measured in a browser -- the path never left /account across ten
+        seconds of sampling.
+      - **Nothing stale may survive.** A hard load rebuilds the React tree and
+        discards Next's client router cache, so there is no cached server
+        render of an authenticated page left to walk back into.
+      - **Back must be safe.** `replace` writes over the current history entry
+        instead of pushing a new one, so Back skips the page they just signed
+        out of rather than returning to it.
+
+      Nothing is lost by reloading: the cart and wishlist are zustand stores
+      persisted to localStorage ("mak-cart" / wishlist), and the clear above
+      touches only the token keys -- so a guest keeps their bag across the
+      sign-out.
+
+      The confirmation is handed over through the existing `mak_auth_toast`
+      flash slot rather than shown here, because a toast raised immediately
+      before a document navigation is destroyed before anyone reads it. The
+      provider picks it up on mount on the other side.
+
+      Home rather than /login: signing out is not a request to sign in again,
+      and the homepage is public so it can never bounce.
+    */
+    try {
+      sessionStorage.setItem("mak_auth_toast", "You have been signed out.");
+    } catch {
+      // A missing confirmation is not worth failing the sign-out over.
+    }
+    window.location.replace("/");
   };
 
   return (

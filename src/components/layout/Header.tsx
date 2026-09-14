@@ -11,8 +11,8 @@ import {
   IconButton,
   MenuIcon,
   SearchIcon,
-  UserIcon,
 } from "@/design-system";
+import { AccountMenu } from "@/components/commerce";
 import { selectCartCount, useCartStore } from "@/store/cart";
 import { selectWishlistCount, useWishlistStore } from "@/store/wishlist";
 import { useUIStore } from "@/store/ui";
@@ -116,18 +116,12 @@ export function Header({ nav, className }: HeaderProps) {
               <SearchIcon />
             </IconButton>
 
-            <Link
-              href="/account"
-              aria-label="Account"
-              className={cn(
-                "hidden size-11 items-center justify-center border-2 border-mak-divider text-mak-ink sm:inline-flex",
-                "transition-colors duration-200 ease-mak hover:border-mak-ink hover:bg-mak-ink hover:text-mak-bg",
-                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mak-accent",
-                "[@media(pointer:fine)]:size-9"
-              )}
-            >
-              <UserIcon />
-            </Link>
+            {/*
+              The account control, which now knows whether anyone is signed in.
+              It was a bare link to /account, which meant this header -- the one
+              every rebuilt route uses -- offered no way to sign out at all.
+            */}
+            <AccountMenu />
 
             <Link
               href="/wishlist"

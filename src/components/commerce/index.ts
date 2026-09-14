@@ -6,6 +6,7 @@
  * component takes typed props or reads a store.
  */
 
+export { AccountMenu, type AccountMenuProps } from "./AccountMenu";
 export { ProductCard, productHref, type ProductCardProps } from "./ProductCard";
 export { ProductImage, type ProductImageProps } from "./ProductImage";
 export { ProductGrid, type ProductGridProps } from "./ProductGrid";

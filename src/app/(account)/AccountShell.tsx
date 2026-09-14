@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
-import { ButtonLink, EmptyState, LoadingState } from "@/design-system";
+import { Button, ButtonLink, EmptyState, LoadingState } from "@/design-system";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/AuthContext";
 
@@ -31,7 +31,7 @@ const SECTIONS = [
 
 export function AccountShell({ children }: { children: ReactNode }) {
   const pathname = usePathname() || "";
-  const { user, loading } = useAuth();
+  const { user, loading, logout } = useAuth();
 
   if (loading) {
     return <LoadingState label="Loading your account" />;
@@ -51,10 +51,35 @@ export function AccountShell({ children }: { children: ReactNode }) {
     );
   }
 
+  const identity = user.name?.trim() || user.email?.trim();
+
   return (
-    <div className="grid gap-9 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-14">
-      <AccountNav pathname={pathname} />
-      <div className="min-w-0">{children}</div>
+    <div className="flex flex-col gap-7">
+      {/*
+        Who is signed in, and the way out.
+
+        The account area is where someone goes *looking* for sign-out, so it is
+        offered here as well as in the header menu -- and it is the one place
+        that works on every viewport without opening a menu first.
+      */}
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b-2 border-mak-line pb-5">
+        <div className="min-w-0">
+          <p className="text-mak-micro uppercase tracking-[0.14em] text-mak-subtle">
+            Signed in as
+          </p>
+          <p className="mt-1 break-all font-display text-mak-small font-extrabold text-mak-ink">
+            {identity}
+          </p>
+        </div>
+        <Button variant="secondary" onClick={logout}>
+          Sign out
+        </Button>
+      </div>
+
+      <div className="grid gap-9 lg:grid-cols-[200px_minmax(0,1fr)] lg:gap-14">
+        <AccountNav pathname={pathname} />
+        <div className="min-w-0">{children}</div>
+      </div>
     </div>
   );
 }

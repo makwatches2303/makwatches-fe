@@ -17,6 +17,7 @@ import { Drawer } from "@/design-system";
 import { selectCartCount, useCartStore } from "@/store/cart";
 import { selectWishlistCount, useWishlistStore } from "@/store/wishlist";
 import { selectMobileNavOpen, useUIStore } from "@/store/ui";
+import { useAuth } from "@/context/AuthContext";
 
 import type { NavItem } from "@/lib/api/storefront";
 import { isExternalNavItem, isNavItemActive } from "./navigation";
@@ -50,6 +51,9 @@ export function MobileNav({ nav, support }: MobileNavProps) {
 
   const cartCount = useCartStore(selectCartCount);
   const wishlistCount = useWishlistStore(selectWishlistCount);
+
+  const { user, loading, logout } = useAuth();
+  const signedIn = !loading && Boolean(user);
 
   useEffect(() => {
     if (open) close();
@@ -126,15 +130,43 @@ export function MobileNav({ nav, support }: MobileNavProps) {
       </div>
 
       <div className="px-6 py-6">
+        {/*
+          Account, and -- when there is a session -- a way out of it. The panel
+          previously offered only a link to /account, so a customer on a phone
+          had no sign-out anywhere in the rebuilt storefront.
+
+          `loading` is treated as neither signed in nor out: the link stays
+          neutral until the session resolves, rather than flashing "Sign in" at
+          someone who is already signed in.
+        */}
         <Link
-          href="/account"
+          href={signedIn ? "/account" : loading ? "/account" : "/login"}
+          onClick={close}
           className="inline-flex min-h-11 items-center gap-2.5 text-mak-ink no-underline hover:text-mak-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mak-accent"
         >
           <UserIcon size={18} />
           <span className="font-display text-mak-small font-extrabold tracking-[0.04em]">
-            Account &amp; orders
+            {signedIn ? "Account & orders" : loading ? "Account" : "Sign in"}
           </span>
         </Link>
+
+        {signedIn ? (
+          <>
+            <p className="mt-2 break-all text-mak-label text-mak-subtle">
+              Signed in as {user?.name?.trim() || user?.email?.trim()}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                close();
+                logout();
+              }}
+              className="mt-4 inline-flex min-h-11 w-full items-center justify-center border-2 border-mak-accent px-4 font-display text-mak-label font-extrabold uppercase tracking-[0.12em] text-mak-accent transition-colors duration-200 ease-mak hover:bg-mak-accent hover:text-mak-on-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mak-accent"
+            >
+              Sign out
+            </button>
+          </>
+        ) : null}
 
         <Divider weight="hairline" className="my-5" />
 
