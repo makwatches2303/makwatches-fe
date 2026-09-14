@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { subscribeWhatsApp } from "@/lib/api/marketing";
 import { trackLeadCapture } from "@/lib/analytics";
+import { useAuth } from "@/context/AuthContext";
 
 const DISMISS_KEY = "mak_phone_popup_dismissed";
 const SUBSCRIBED_KEY = "mak_phone_popup_subscribed";
@@ -13,6 +14,7 @@ const DISMISS_COOLDOWN_DAYS = 7;
 
 export function PhoneCaptureModal() {
   const pathname = usePathname() || "";
+  const { user } = useAuth();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -29,7 +31,16 @@ export function PhoneCaptureModal() {
     pathname.startsWith("/design-system");
 
   useEffect(() => {
-    if (isExcludedRoute) return;
+    // Never for a signed-in customer -- we already have their contact info,
+    // and a full-screen "give us your phone number" overlay landing right
+    // after they've just authenticated (Google redirect included) reads as
+    // the site asking them to log in a second time. This also closes an
+    // already-open modal the instant auth resolves, in case the 6s timer
+    // fired before the profile fetch finished.
+    if (isExcludedRoute || user) {
+      setOpen(false);
+      return;
+    }
 
     try {
       const isSubscribed = localStorage.getItem(SUBSCRIBED_KEY);
@@ -53,7 +64,7 @@ export function PhoneCaptureModal() {
     } catch {
       // localStorage may be unavailable
     }
-  }, [isExcludedRoute]);
+  }, [isExcludedRoute, user]);
 
   const handleDismiss = () => {
     setOpen(false);
@@ -111,7 +122,7 @@ export function PhoneCaptureModal() {
     }
   };
 
-  if (!open || isExcludedRoute) return null;
+  if (!open || isExcludedRoute || user) return null;
 
   return (
     <div
