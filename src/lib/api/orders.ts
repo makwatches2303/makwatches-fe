@@ -114,6 +114,40 @@ export function cancelOrder(orderId: string): Promise<void> {
   );
 }
 
+/** The delivery details a customer may correct after ordering. */
+export interface OrderAddressInput {
+  name: string;
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+  phone: string;
+}
+
+/**
+ * Correct the delivery address on an order.
+ *
+ * A wrong pincode is the single most common reason a parcel cannot be
+ * booked, and until this existed the customer could see the order was stuck
+ * but had no way to fix it. The server re-checks that a courier delivers to
+ * the new pincode before saving, and rejects with per-field messages
+ * (ApiError.fieldErrors) when it does not -- so a correction can never
+ * replace one undeliverable address with another.
+ *
+ * Refused once the courier has collected the parcel: at that point the label
+ * on the box is the truth, and only the carrier can redirect it.
+ */
+export function updateOrderAddress(
+  orderId: string,
+  address: OrderAddressInput
+): Promise<unknown> {
+  return http.patch<unknown>(
+    `/orders/${encodeURIComponent(orderId)}/address`,
+    address
+  );
+}
+
 /**
  * Live carrier tracking for an order.
  *

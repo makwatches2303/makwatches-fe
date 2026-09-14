@@ -14,6 +14,7 @@ import {
   useToast,
 } from "@/design-system";
 import { ApiError } from "@/lib/api/client";
+import { EditOrderAddress } from "./EditOrderAddress";
 import { formatAddress } from "@/lib/api/addresses";
 import {
   ORDER_STAGES,
@@ -47,6 +48,7 @@ export function OrderDetail({ orderId }: { orderId: string }) {
   const [trackingState, setTrackingState] =
     useState<"idle" | "loading" | "none" | "unavailable">("idle");
   const [cancelling, setCancelling] = useState(false);
+  const [editingAddress, setEditingAddress] = useState(false);
 
   const load = useCallback(() => {
     setError(null);
@@ -120,6 +122,24 @@ export function OrderDetail({ orderId }: { orderId: string }) {
   const stage = orderStageIndex(order.status);
   const offPath = stage === -1;
   const shipping = tracking ?? order.shippingInfo ?? null;
+
+  // Once a courier has the parcel, the printed label is the truth and only
+  // the carrier can redirect it -- so the edit is offered only while the
+  // order is still with us. Mirrors the server's own rule; the API refuses
+  // it either way, and offering an action that always fails is worse than
+  // not offering one.
+  const movedStatuses = new Set([
+    "picked_up",
+    "in_transit",
+    "out_for_delivery",
+    "delivered",
+    "returned",
+  ]);
+  const orderStatus = order.status?.toLowerCase() ?? "";
+  const canEditAddress =
+    !["cancelled", "delivered", "returned"].includes(orderStatus) &&
+    !movedStatuses.has(order.shippingInfo?.shipmentStatus?.toLowerCase() ?? "");
+  const dispatchBlocked = Boolean(order.shippingInfo?.shipmentError);
 
   return (
     <div className="flex flex-col gap-10">
@@ -272,16 +292,65 @@ export function OrderDetail({ orderId }: { orderId: string }) {
       </section>
 
       <section aria-labelledby="order-address">
-        <h3
-          id="order-address"
-          className="mb-4 font-display text-mak-label font-extrabold uppercase tracking-[0.14em] text-mak-ink"
-        >
-          Delivering to
-        </h3>
-        <Text size="small" tone="muted">
-          {order.shippingAddress?.name}
-          {order.shippingAddress ? ` — ${formatAddress(order.shippingAddress)}` : ""}
-        </Text>
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+          <h3
+            id="order-address"
+            className="font-display text-mak-label font-extrabold uppercase tracking-[0.14em] text-mak-ink"
+          >
+            Delivering to
+          </h3>
+          {canEditAddress && !editingAddress ? (
+            <Button variant="ghost" onClick={() => setEditingAddress(true)}>
+              Change address
+            </Button>
+          ) : null}
+        </div>
+
+        {/* A parcel that could not be booked is usually a wrong address, and
+          * the customer is the one who can fix it fastest. Saying only "not
+          * dispatched yet" left them waiting on a delivery that was never
+          * going to happen. The carrier's own wording is deliberately not
+          * repeated here -- it is written for an operations desk. */}
+        {dispatchBlocked && !editingAddress ? (
+          <div
+            role="status"
+            className="mb-5 border-2 border-mak-line bg-mak-surface p-4"
+          >
+            <Text size="small" className="font-semibold text-mak-ink">
+              We could not book this parcel with the courier.
+            </Text>
+            <Text size="small" tone="muted" className="mt-1">
+              This is usually a delivery address a courier cannot reach — most
+              often a pincode that does not exist. Please check the address
+              below and correct it, and we will dispatch straight away.
+            </Text>
+            {canEditAddress ? (
+              <Button className="mt-4" onClick={() => setEditingAddress(true)}>
+                Check and fix the address
+              </Button>
+            ) : null}
+          </div>
+        ) : null}
+
+        {editingAddress ? (
+          <EditOrderAddress
+            order={order}
+            onCancel={() => setEditingAddress(false)}
+            onSaved={(message) => {
+              setEditingAddress(false);
+              toast(message, { tone: "success" });
+              // Re-read rather than patching local state: saving may also have
+              // withdrawn a booking made to the old address, so the shipment
+              // block on this page is stale too.
+              load();
+            }}
+          />
+        ) : (
+          <Text size="small" tone="muted">
+            {order.shippingAddress?.name}
+            {order.shippingAddress ? ` — ${formatAddress(order.shippingAddress)}` : ""}
+          </Text>
+        )}
       </section>
 
       <Divider />

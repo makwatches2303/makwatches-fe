@@ -26,12 +26,27 @@ import type { ApiResponse } from "./types";
 export class ApiError extends Error {
   readonly status: number;
   readonly url?: string;
+  /** Per-field validation messages, keyed by field name, when the endpoint
+   * returns them -- so a form can mark the offending input instead of
+   * showing one banner and leaving the customer to guess which box is
+   * wrong. */
+  readonly fieldErrors?: Record<string, string>;
+  /** Stable machine-readable reason (e.g. PINCODE_NOT_SERVICEABLE), for
+   * callers that need to branch on it rather than match on wording. */
+  readonly code?: string;
 
-  constructor(message: string, status: number, url?: string) {
+  constructor(
+    message: string,
+    status: number,
+    url?: string,
+    extra?: { fieldErrors?: Record<string, string>; code?: string }
+  ) {
     super(message);
     this.name = "ApiError";
     this.status = status;
     this.url = url;
+    this.fieldErrors = extra?.fieldErrors;
+    this.code = extra?.code;
   }
 
   /** True when the resource genuinely does not exist, as opposed to failing. */
@@ -111,14 +126,22 @@ export function apiClient(): AxiosInstance {
 /** Normalize any thrown value into an ApiError. */
 function toApiError(error: unknown): ApiError {
   if (axios.isAxiosError(error)) {
-    const axiosError = error as AxiosError<{ message?: string; error?: string }>;
+    const axiosError = error as AxiosError<{
+      message?: string;
+      error?: string;
+      fieldErrors?: Record<string, string>;
+      code?: string;
+    }>;
     const status = axiosError.response?.status ?? 0;
     const message =
       axiosError.response?.data?.message ||
       axiosError.response?.data?.error ||
       axiosError.message ||
       "Request failed";
-    return new ApiError(message, status, axiosError.config?.url);
+    return new ApiError(message, status, axiosError.config?.url, {
+      fieldErrors: axiosError.response?.data?.fieldErrors,
+      code: axiosError.response?.data?.code,
+    });
   }
   if (error instanceof Error) return new ApiError(error.message, 0);
   return new ApiError("Unknown error", 0);
