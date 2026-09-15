@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 
 import { Button, Field, Input, Text } from "@/design-system";
+import { PincodeProblemModal } from "@/components/commerce/PincodeProblemModal";
 import { ApiError } from "@/lib/api/client";
 import {
   updateOrderAddress,
@@ -50,6 +51,21 @@ export function EditOrderAddress({
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+  /** The rejected pincode, when the server said no courier reaches it. */
+  const [pincodeProblem, setPincodeProblem] = useState<{
+    pincode: string;
+    reason: string;
+  } | null>(null);
+  const formRef = useRef<HTMLFormElement>(null);
+
+  function focusPincode() {
+    const input = formRef.current?.querySelector<HTMLInputElement>(
+      'input[autocomplete="postal-code"]'
+    );
+    input?.scrollIntoView({ block: "center", behavior: "smooth" });
+    input?.focus();
+    input?.select();
+  }
 
   function set(key: keyof OrderAddressInput, value: string) {
     setDraft((d) => ({ ...d, [key]: value }));
@@ -78,6 +94,17 @@ export function EditOrderAddress({
           setFieldErrors(error.fieldErrors);
         }
         setFormError(error.message);
+        // A rejected pincode is the one mistake people most often cannot
+        // see in their own typing -- say it where it cannot be missed.
+        if (
+          error.code === "PINCODE_NOT_SERVICEABLE" ||
+          error.fieldErrors?.zipCode
+        ) {
+          setPincodeProblem({
+            pincode: draft.zipCode,
+            reason: error.fieldErrors?.zipCode ?? error.message,
+          });
+        }
       } else {
         setFormError("Something went wrong. Please try again.");
       }
@@ -87,7 +114,7 @@ export function EditOrderAddress({
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-5">
+    <form ref={formRef} onSubmit={submit} className="flex flex-col gap-5">
       {formError ? (
         <p
           role="alert"
@@ -169,6 +196,16 @@ export function EditOrderAddress({
       <Text size="label" tone="subtle">
         We check that a courier delivers to the new pincode before saving.
       </Text>
+
+      <PincodeProblemModal
+        open={pincodeProblem !== null}
+        onClose={() => setPincodeProblem(null)}
+        onFix={() => window.setTimeout(focusPincode, 60)}
+        pincode={pincodeProblem?.pincode}
+        reason={pincodeProblem?.reason}
+        title="This address wasn't saved"
+        closeLabel="Close"
+      />
     </form>
   );
 }

@@ -14,6 +14,7 @@ import {
   useToast,
 } from "@/design-system";
 import { ApiError } from "@/lib/api/client";
+import { PincodeProblemModal } from "@/components/commerce/PincodeProblemModal";
 import { EditOrderAddress } from "./EditOrderAddress";
 import { formatAddress } from "@/lib/api/addresses";
 import {
@@ -49,6 +50,7 @@ export function OrderDetail({ orderId }: { orderId: string }) {
     useState<"idle" | "loading" | "none" | "unavailable">("idle");
   const [cancelling, setCancelling] = useState(false);
   const [editingAddress, setEditingAddress] = useState(false);
+  const [addressProblemOpen, setAddressProblemOpen] = useState(false);
 
   const load = useCallback(() => {
     setError(null);
@@ -85,6 +87,24 @@ export function OrderDetail({ orderId }: { orderId: string }) {
     return () => {
       active = false;
     };
+  }, [order]);
+
+  // An order the courier refused is almost always a wrong address, and the
+  // customer may not scroll down far enough to see the notice. Tell them up
+  // front -- once per order per browser session, so it is not a nag on every
+  // visit -- while the address can still be corrected.
+  useEffect(() => {
+    if (!order?.shippingInfo?.shipmentError) return;
+    const status = order.status?.toLowerCase() ?? "";
+    if (["cancelled", "delivered", "returned"].includes(status)) return;
+    const key = `mak:address-problem-shown:${order.id}`;
+    try {
+      if (sessionStorage.getItem(key)) return;
+      sessionStorage.setItem(key, "1");
+    } catch {
+      // Storage unavailable: showing it again is better than never.
+    }
+    setAddressProblemOpen(true);
   }, [order]);
 
   async function requestCancellation() {
@@ -352,6 +372,48 @@ export function OrderDetail({ orderId }: { orderId: string }) {
           </Text>
         )}
       </section>
+
+      <PincodeProblemModal
+        open={addressProblemOpen}
+        onClose={() => setAddressProblemOpen(false)}
+        onFix={
+          canEditAddress
+            ? () => {
+                setEditingAddress(true);
+                window.setTimeout(() => {
+                  document
+                    .getElementById("order-address")
+                    ?.scrollIntoView({ block: "start", behavior: "smooth" });
+                }, 60);
+              }
+            : undefined
+        }
+        pincode={order.shippingAddress?.zipCode}
+        title="Your order is on hold"
+        headline={
+          order.shippingAddress?.zipCode ? (
+            <>
+              The courier could not accept pincode{" "}
+              <span className="whitespace-nowrap tracking-[0.08em] text-mak-error">
+                {order.shippingAddress.zipCode}
+              </span>
+            </>
+          ) : (
+            "The courier could not accept this delivery address"
+          )
+        }
+        reason={
+          order.shippingAddress
+            ? `${order.shippingAddress.name ?? ""} — ${formatAddress(order.shippingAddress)}`
+            : null
+        }
+        body={
+          canEditAddress
+            ? "Your order has not been dispatched yet. This usually means the pincode was mistyped or does not exist. Correct the address and we will send it out straight away."
+            : "Your order has not been dispatched yet. Please contact us so we can confirm the right delivery address with you."
+        }
+        fixLabel="Fix the address"
+      />
 
       <Divider />
 

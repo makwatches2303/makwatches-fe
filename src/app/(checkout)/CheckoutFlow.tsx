@@ -49,6 +49,8 @@ import {
   trackPurchase,
 } from "@/lib/analytics";
 
+import { PincodeProblemModal } from "@/components/commerce/PincodeProblemModal";
+
 import { CheckoutSummary } from "./CheckoutSummary";
 import { ShippingOptions } from "./ShippingOptions";
 import { OrderPlaced } from "./OrderPlaced";
@@ -128,6 +130,11 @@ export function CheckoutFlow() {
     useState<PincodeServiceability | null>(null);
   const [pincodeMessage, setPincodeMessage] = useState<string | null>(null);
   const [checkingPincode, setCheckingPincode] = useState(false);
+  /** A pincode the carrier said it cannot reach, shown in a modal. */
+  const [pincodeProblem, setPincodeProblem] =
+    useState<{ pincode: string; reason?: string | null } | null>(null);
+  /** The last pincode confirmed unserviceable, so Continue can refuse it. */
+  const unserviceablePincodeRef = useRef<string | null>(null);
 
   // Delivery options are fetched per (pincode, payment mode), because the
   // carrier prices COD differently and the server binds each quote to the mode
@@ -275,6 +282,22 @@ export function CheckoutFlow() {
     setPincodeMessage(null);
   }
 
+  /** Take the shopper straight to the pincode that needs correcting. */
+  function fixPincode() {
+    setConfirmOpen(false);
+    setStep("address");
+    // A saved address cannot be typed into until it is opened for editing.
+    if (usingSaved && selectedAddress) startEditingAddress();
+    window.setTimeout(() => {
+      const input = document.querySelector<HTMLInputElement>(
+        'input[autocomplete="postal-code"]'
+      );
+      input?.scrollIntoView({ block: "center", behavior: "smooth" });
+      input?.focus();
+      input?.select();
+    }, 80);
+  }
+
   function cancelEditingAddress() {
     setEditingAddressId(null);
     setErrors({});
@@ -295,8 +318,13 @@ export function CheckoutFlow() {
         if (!result.serviceable) {
           setServiceability(null);
           setPincodeMessage(result.reason);
+          // Hint text under the field was too easy to miss; a pincode no
+          // courier reaches is almost always a typo and must be seen.
+          unserviceablePincodeRef.current = trimmed;
+          setPincodeProblem({ pincode: trimmed, reason: result.reason });
           return null;
         }
+        unserviceablePincodeRef.current = null;
         setServiceability(result.details);
         return result.details;
       } catch {
@@ -431,6 +459,16 @@ export function CheckoutFlow() {
 
     const details =
       serviceability ?? (await verifyPincode(effectiveAddress.zipCode));
+
+    // The carrier has said outright it cannot reach this pincode. Moving on
+    // to payment would only fail later (or worse, take money for a parcel
+    // that cannot ship); the modal opened by verifyPincode explains why.
+    if (
+      !details &&
+      unserviceablePincodeRef.current === effectiveAddress.zipCode.trim()
+    ) {
+      return;
+    }
 
     // COD is offered only where the carrier confirms it. Where we could not
     // reach the carrier at all, only prepaid is offered -- promising cash on
@@ -568,6 +606,15 @@ export function CheckoutFlow() {
       setPlaced(order);
       clearCart();
     } catch (error: unknown) {
+      if (
+        error instanceof ApiError &&
+        (error.code === "PINCODE_NOT_SERVICEABLE" || error.fieldErrors?.zipCode)
+      ) {
+        setPincodeProblem({
+          pincode: effectiveAddress.zipCode,
+          reason: error.fieldErrors?.zipCode ?? error.message,
+        });
+      }
       setPlaceError(
         error instanceof ApiError
           ? error.message
@@ -977,46 +1024,72 @@ export function CheckoutFlow() {
         title={method === "cod" ? "Place this order?" : "Continue to payment?"}
         size="sm"
       >
-        <div className="flex flex-col gap-5">
+        <div className="flex flex-col gap-6 p-6">
           <Text tone="muted">
             {method === "cod"
               ? "We'll send this to the courier and you'll pay them on delivery."
               : "This opens Razorpay's secure window to take the payment."}
           </Text>
 
-          <dl className="flex flex-col gap-2 border-y-2 border-mak-line py-4 text-mak-small">
-            <div className="flex items-start justify-between gap-4">
-              <dt className="text-mak-ink/70">Total</dt>
-              <dd className="font-display font-extrabold text-mak-ink">
-                {formatPrice(displayTotal ?? 0)}
-              </dd>
-            </div>
-            <div className="flex items-start justify-between gap-4">
+          <div className="flex items-baseline justify-between gap-4 border-2 border-mak-line bg-mak-surface px-4 py-3">
+            <span className="font-display text-mak-label font-extrabold uppercase tracking-[0.14em] text-mak-ink/70">
+              {method === "cod" ? "Pay on delivery" : "To pay"}
+            </span>
+            <span className="font-display text-xl font-extrabold text-mak-ink">
+              {formatPrice(displayTotal ?? 0)}
+            </span>
+          </div>
+
+          <dl className="flex flex-col divide-y-2 divide-mak-divider text-mak-small">
+            <div className="flex items-start justify-between gap-4 pb-3">
               <dt className="text-mak-ink/70">
-                {lines.length === 1 ? "Item" : "Items"}
+                {lines.reduce((n, l) => n + l.quantity, 0) === 1 ? "Item" : "Items"}
               </dt>
-              <dd className="text-right text-mak-ink">
+              <dd className="text-right font-semibold text-mak-ink">
                 {lines.reduce((n, l) => n + l.quantity, 0)}
               </dd>
             </div>
-            {effectiveAddress ? (
-              <div className="flex items-start justify-between gap-4">
-                <dt className="shrink-0 text-mak-ink/70">Delivering to</dt>
-                <dd className="text-right text-mak-ink">
-                  {effectiveAddress.name} — {effectiveAddress.street},{" "}
-                  {effectiveAddress.city} {effectiveAddress.zipCode}
-                </dd>
-              </div>
-            ) : null}
-            <div className="flex items-start justify-between gap-4">
+            <div className="flex items-start justify-between gap-4 py-3">
               <dt className="text-mak-ink/70">Payment</dt>
-              <dd className="text-right text-mak-ink">
+              <dd className="text-right font-semibold text-mak-ink">
                 {method === "cod" ? "Cash on delivery" : "Card / UPI (Razorpay)"}
               </dd>
             </div>
+            {effectiveAddress ? (
+              <div className="flex flex-col gap-1.5 pt-3">
+                <dt className="flex items-center justify-between gap-4 text-mak-ink/70">
+                  <span>Delivering to</span>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setConfirmOpen(false);
+                      setStep("address");
+                    }}
+                    className="font-display font-extrabold text-mak-accent underline-offset-4 hover:underline"
+                  >
+                    Change
+                  </button>
+                </dt>
+                <dd className="text-mak-ink">
+                  <span className="font-semibold">{effectiveAddress.name}</span>
+                  <br />
+                  {effectiveAddress.street}, {effectiveAddress.city},{" "}
+                  {effectiveAddress.state}
+                  <br />
+                  Pincode{" "}
+                  <span className="font-semibold tracking-[0.06em]">
+                    {effectiveAddress.zipCode}
+                  </span>
+                  {effectiveAddress.phone ? ` · ${effectiveAddress.phone}` : ""}
+                </dd>
+              </div>
+            ) : null}
           </dl>
 
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-col-reverse gap-3 border-t-2 border-mak-line pt-5 sm:flex-row sm:justify-end">
+            <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
+              Go back
+            </Button>
             <Button
               onClick={() => {
                 setConfirmOpen(false);
@@ -1026,12 +1099,19 @@ export function CheckoutFlow() {
             >
               {method === "cod" ? "Yes, place order" : "Yes, continue"}
             </Button>
-            <Button variant="ghost" onClick={() => setConfirmOpen(false)}>
-              Go back
-            </Button>
           </div>
         </div>
       </Modal>
+
+      <PincodeProblemModal
+        open={pincodeProblem !== null}
+        onClose={() => setPincodeProblem(null)}
+        onFix={fixPincode}
+        pincode={pincodeProblem?.pincode}
+        reason={pincodeProblem?.reason}
+        title="We can't deliver to this pincode"
+        closeLabel="Close"
+      />
     </div>
   );
 }
