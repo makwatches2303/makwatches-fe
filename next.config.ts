@@ -18,6 +18,13 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
 
   images: {
+    // Serve images directly instead of through Vercel's optimizer. The
+    // project's optimization quota ran out and every uncached /_next/image
+    // request started returning 402 OPTIMIZED_IMAGE_REQUEST_PAYMENT_REQUIRED,
+    // which ProductImage's onError turned into the "NO IMAGE" placeholder on
+    // most products. Catalog uploads are already ~1000px JPEGs of 50-100 KB,
+    // so resizing bought little.
+    unoptimized: true,
     remotePatterns: [
       // Product/catalog images live in Firebase Storage. Objects are written by
       // the Go backend to the bucket root and served publicly from the GCS
