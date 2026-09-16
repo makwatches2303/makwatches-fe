@@ -25,12 +25,28 @@ export interface ProductImageProps {
   sizes?: string;
   /** Aspect ratio of the frame. Products are square throughout the system. */
   ratio?: "square" | "portrait" | "landscape" | "auto";
+  /**
+   * How the image fills the frame.
+   *
+   * `cover` crops to fill and suits imagery chosen for its frame. `contain`
+   * shows the whole photograph letterboxed against the frame's white ground --
+   * the correct choice for a product shot, which must never be cropped.
+   */
+  fit?: "cover" | "contain";
   /** Prioritize loading. Use only for above-the-fold imagery. */
   priority?: boolean;
   /** Apply the reference's black-and-white treatment. */
   grayscale?: boolean;
   /** Scale on hover. Only takes effect on fine-pointer devices. */
   hoverZoom?: boolean;
+  /**
+   * Notified when the image fails to load.
+   *
+   * The placeholder is still shown either way -- this is additive, for callers
+   * that have a second source worth trying (an order line falling back from a
+   * stale snapshot URL to the live product).
+   */
+  onError?: () => void;
   className?: string;
   imageClassName?: string;
 }
@@ -47,9 +63,11 @@ export function ProductImage({
   alt,
   sizes = IMAGE_SIZES.productGrid,
   ratio = "square",
+  fit = "cover",
   priority = false,
   grayscale = false,
   hoverZoom = false,
+  onError,
   className,
   imageClassName,
 }: ProductImageProps) {
@@ -74,9 +92,13 @@ export function ProductImage({
         fill
         sizes={sizes}
         priority={priority}
-        onError={() => setFailed(true)}
+        onError={() => {
+          setFailed(true);
+          onError?.();
+        }}
         className={cn(
-          "object-cover",
+          // The placeholder overrides this below; it is always contained.
+          fit === "contain" ? "object-contain" : "object-cover",
           // The placeholder is contained and inset so it reads as a marker
           // rather than as a cropped photograph.
           isPlaceholder && "scale-[0.55] object-contain opacity-70",

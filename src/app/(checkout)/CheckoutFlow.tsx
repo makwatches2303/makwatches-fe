@@ -52,6 +52,8 @@ import {
 import { PincodeProblemModal } from "@/components/commerce/PincodeProblemModal";
 
 import { CheckoutSummary } from "./CheckoutSummary";
+import { selectableShippingOptions } from "@/lib/shipping-presentation";
+
 import { ShippingOptions } from "./ShippingOptions";
 import { OrderPlaced } from "./OrderPlaced";
 
@@ -370,7 +372,21 @@ export function CheckoutFlow() {
       setShippingOptions([]);
       try {
         const result = await fetchShippingOptions(pincode.trim(), cod);
-        const options = result?.options ?? [];
+        /*
+          Narrow to what a customer may actually choose *before* this reaches
+          state.
+
+          The preselect below picks the carrier's recommendation from whatever
+          list is held. Filtering only at render time would leave a hidden,
+          non-customer-facing option silently selected and submitted -- the UI
+          would show one thing and the order would carry another. Doing it here
+          means the selectable set and the visible set are the same set, by
+          construction.
+
+          The objects themselves are untouched: each still carries its original
+          signed `quote`, courier id and charge.
+        */
+        const options = selectableShippingOptions(result?.options ?? []);
         setShippingOptions(options);
         // Preselect the carrier's own recommendation, else the cheapest. The
         // customer can change it; this only avoids an empty required field.

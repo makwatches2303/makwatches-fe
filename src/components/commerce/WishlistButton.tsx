@@ -18,7 +18,12 @@ import { useWishlistStore, selectIsWishlisted } from "@/store/wishlist";
 
 export interface WishlistButtonProps {
   product: Product;
-  size?: "sm" | "md";
+  /**
+   * `xs` is the product-card overlay: a smaller visible box that keeps a full
+   * 44px tap target through an expanded hit area, so shrinking it costs
+   * nothing on touch.
+   */
+  size?: "xs" | "sm" | "md";
   /** `overlay` sits on top of a product image; `plain` sits in a text row. */
   variant?: "overlay" | "plain";
   className?: string;
@@ -52,10 +57,23 @@ export function WishlistButton({
         toggle(product);
       }}
       className={cn(
-        "inline-flex items-center justify-center border-2 transition-colors duration-200 ease-mak",
+        "relative inline-flex items-center justify-center border-2 transition-colors duration-200 ease-mak",
         "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mak-accent",
-        // 44px on touch, tightening only where a fine pointer is present.
-        size === "sm" ? "size-11 [@media(pointer:fine)]:size-9" : "size-11",
+        /*
+          44px on touch, tightening only where a fine pointer is present.
+
+          `xs` breaks that rule visually and not functionally. On a product tile
+          the heart sits over the photograph, and at 44px it was taking a
+          noticeable bite out of the image. The box shrinks to 32px, and the
+          `after:` pseudo-element extends the *hit* area back past 44px without
+          occupying any layout space -- so the control is smaller to look at and
+          exactly as easy to hit.
+        */
+        size === "xs"
+          ? "size-8 after:absolute after:-inset-1.5 after:content-[''] [@media(pointer:fine)]:size-7 [@media(pointer:fine)]:after:inset-0"
+          : size === "sm"
+            ? "size-11 [@media(pointer:fine)]:size-9"
+            : "size-11",
         wished
           ? "border-mak-accent bg-mak-accent text-mak-on-accent"
           : variant === "overlay"
@@ -64,7 +82,7 @@ export function WishlistButton({
         className
       )}
     >
-      <HeartIcon size={16} filled={wished} />
+      <HeartIcon size={size === "xs" ? 14 : 16} filled={wished} />
     </button>
   );
 }

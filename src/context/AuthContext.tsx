@@ -106,31 +106,53 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchProfile = useCallback(async () => {
     try {
-      console.log("[AuthContext] Fetching profile...");
-      // Ensure we have a token before making the request
-      const customerToken = localStorage.getItem("customerToken");
-      const adminToken = localStorage.getItem("adminToken");
-      const token = customerToken || adminToken;
-      
+      // A token has to exist before /me is worth asking.
+      const token =
+        localStorage.getItem("customerToken") ||
+        localStorage.getItem("adminToken");
+
       if (!token) {
-        console.warn("[AuthContext] No token found in localStorage, skipping profile fetch");
         setUser(null);
         setRole(null);
         setLoading(false);
         return;
       }
-      
-      console.log("[AuthContext] Token found, fetching /me");
+
       const res = await api.get("/me");
       const backendUser = res.data.data;
       const frontendUser = normalizeUser(backendUser);
       setUser(frontendUser);
       setRole(normalizeRole(frontendUser.role));
-      console.log("[AuthContext] Profile fetched successfully:", frontendUser);
     } catch (error) {
-      console.error("[AuthContext] Error fetching profile:", error);
-      setUser(null);
-      setRole(null);
+      /*
+        "The server rejected this session" and "I could not reach the server"
+        are different answers, and were being treated as the same one.
+
+        Only a 401/403 means the token is actually no longer good. Everything
+        else -- the API being down, a dropped connection, a 500 -- says nothing
+        about the session, and clearing it there signed a customer out of the
+        UI over a momentary blip while their token was still perfectly valid.
+        The stored token is left alone in that case; any request that genuinely
+        needs it will surface its own failure.
+
+        Nothing is logged with console.error either. This is a handled,
+        expected branch, and console.error raises Next's full-screen dev error
+        overlay -- which is what put an "AxiosError: Network Error" card over
+        the whole site whenever the API was not running locally.
+      */
+      const status =
+        typeof error === "object" && error !== null && "response" in error
+          ? (error as { response?: { status?: number } }).response?.status
+          : undefined;
+
+      if (status === 401 || status === 403) {
+        setUser(null);
+        setRole(null);
+      } else if (process.env.NODE_ENV !== "production") {
+        console.warn(
+          "[AuthContext] Could not verify the session; keeping it until the API answers."
+        );
+      }
     } finally {
       setLoading(false);
     }
@@ -156,9 +178,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const adminToken = Cookies.get("adminToken");
     const token = customerToken || adminToken;
     
-    console.log("[AuthContext] useEffect - Checking for tokens");
-    console.log("[AuthContext] Cookie token:", token ? "exists" : "missing");
-    
     if (token) {
       // Ensure localStorage is in sync with cookies
       const localCustomerToken = localStorage.getItem("customerToken");
@@ -166,14 +185,12 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const localToken = localCustomerToken || localAdminToken;
       
       if (!localToken) {
-        console.log("[AuthContext] Syncing cookie token to localStorage");
         const tokenKey = customerToken ? "customerToken" : "adminToken";
         localStorage.setItem(tokenKey, token);
       }
       
       fetchProfile();
     } else {
-      console.log("[AuthContext] No token found, user not authenticated");
       setRole(null);
       setUser(null);
       setLoading(false);
@@ -201,16 +218,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const userRole = normalizeRole(loggedInUser.role);
       if (!userRole) throw new Error("Login response missing user role");
       const expectedNorm = normalizeRole(expectedRole);
-      if (process.env.NODE_ENV !== "production") {
-        console.log(
-          "Login debug => backend role:",
-          loggedInUser.role,
-          "normalized:",
-          userRole,
-          "expected:",
-          expectedNorm
-        );
-      }
       // Allow admins to authenticate via this login form
       if (expectedNorm && userRole !== expectedNorm && !(expectedNorm === "customer" && userRole === "admin")) {
         throw new Error(`Invalid credentials for ${expectedNorm} login`);
@@ -229,27 +236,57 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
       setRole(userRole);
       setUser(loggedInUser);
-      if (userRole === "admin") {
-        toast("Welcome back, Administrator! Signed in successfully.", { tone: "success" });
-        router.replace(safeRedirectTarget() ?? "/?admin_preview=true");
-      } else {
-        toast("You have successfully signed in. Welcome back!", { tone: "success" });
-        router.replace(safeRedirectTarget() ?? "/");
+
+      const destination =
+        safeRedirectTarget() ??
+        (userRole === "admin" ? "/?admin_preview=true" : "/");
+
+      /*
+        A full-document replace, not `router.replace`.
+
+        Two reasons, both measured rather than assumed:
+
+          - **The client router cache outlives sign-in.** Next prefetches every
+            <Link>, and the footer links to /orders on every page. Prefetched
+            while signed out, that route answers 307 -> /login, and the router
+            kept replaying that redirect *after* the customer signed in --
+            which is the "clicking Orders bounces me to /login" bug. A document
+            load starts a fresh router with an empty cache, so there is no
+            stale redirect left to replay. (The middleware now also marks those
+            redirects `no-store` + `Vary: Cookie`; this is the second line of
+            defence, and the one that also fixes the point below.)
+          - **`router.replace` was not reliably navigating here.** Driven in a
+            real browser, the page stayed on /login after a successful sign-in.
+
+        `replace` rather than `assign` so /login does not sit in history behind
+        the destination -- Back then goes where the customer came from instead
+        of to a sign-in page that would immediately bounce.
+
+        The toast is handed to the existing `mak_auth_toast` flash slot, which
+        the provider reads on mount, because a toast raised immediately before a
+        document navigation is destroyed before anyone sees it. Nothing else is
+        lost: cart and wishlist are persisted to localStorage.
+      */
+      try {
+        sessionStorage.setItem(
+          "mak_auth_toast",
+          userRole === "admin"
+            ? "Welcome back, Administrator! Signed in successfully."
+            : "You have successfully signed in. Welcome back!"
+        );
+      } catch {
+        // A missing greeting is not worth failing the sign-in over.
       }
+      window.location.replace(destination);
     } catch (error: unknown) {
       toast(getErrorMessage(error, "Sign in failed. Please try again."), {
         tone: "error",
       });
 
-      if (typeof error === "object" && error !== null && "response" in error) {
-        const errObj = error as {
-          response?: { data?: unknown };
-          message?: string;
-        };
-        console.error("Login failed:", errObj.response?.data || errObj.message);
-      } else {
-        console.error("Login failed:", error);
-      }
+      // No console.error: the failure is already reported to the customer via
+      // the toast above, and console.error raises Next's full-screen dev error
+      // overlay -- so mistyping a password covered the site with an error card.
+
     }
   };
 
@@ -258,28 +295,21 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       if (!regRole) throw new Error("Role not specified for registration");
       const backendRole = mapRoleForBackend(regRole);
       const payload = { ...data, role: backendRole };
-      if (process.env.NODE_ENV !== "production") {
-        console.log("Register request payload:", payload);
-      }
-      const res = await api.post("/auth/register", payload);
-      if (process.env.NODE_ENV !== "production") {
-        console.log("Register response:", res.data);
-      }
+      // Deliberately not logged. `payload` carries the plaintext password, and
+      // the response carries the freshly issued JWT -- neither belongs in a
+      // console, including in development, where it is read over shoulders and
+      // captured in screen recordings.
+      await api.post("/auth/register", payload);
       await login(data.email, data.password, regRole); // auto login with explicit role
     } catch (error: unknown) {
       toast(getErrorMessage(error, "Registration failed. Please try again."), {
         tone: "error",
       });
 
-      if (typeof error === "object" && error !== null && "response" in error) {
-        console.error(
-          "Register failed: ",
-          (error.response as { data?: unknown })?.data ||
-            (error instanceof Error ? error.message : String(error))
-        );
-      } else {
-        console.error("Register failed:", error);
-      }
+      // As with login: the customer already has the toast, and console.error
+      // would raise the full-screen dev overlay over a handled outcome such as
+      // "that email is already registered".
+
     }
   };
 

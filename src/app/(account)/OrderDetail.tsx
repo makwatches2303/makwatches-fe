@@ -30,6 +30,7 @@ import {
   type ShippingInfo,
 } from "@/lib/api/orders";
 
+import { OrderItemImage } from "./OrderItemImage";
 import { OrderStatusBadge } from "./OrderStatusBadge";
 
 /**
@@ -275,9 +276,29 @@ export function OrderDetail({ orderId }: { orderId: string }) {
           {order.items.map((item, index) => (
             <li
               key={`${item.productId}-${item.size ?? ""}-${index}`}
-              className="flex flex-wrap items-baseline justify-between gap-3 border-b-[1.5px] border-mak-divider py-3.5 first:pt-0"
+              className="flex flex-wrap items-center justify-between gap-3 border-b-[1.5px] border-mak-divider py-3.5 first:pt-0"
             >
-              <span className="min-w-0">
+              {/*
+                The product, shown. An order record that lists only names makes
+                the customer match text against memory; the thumbnail is how
+                they recognise what they bought.
+              */}
+              <Link
+                href={`/product/id/${item.productId}`}
+                aria-hidden="true"
+                tabIndex={-1}
+                className="shrink-0"
+              >
+                <OrderItemImage
+                  image={item.image}
+                  productId={item.productId}
+                  productName={item.productName}
+                  className="size-16"
+                  sizes="64px"
+                />
+              </Link>
+
+              <span className="min-w-0 flex-1">
                 <Link
                   href={`/product/id/${item.productId}`}
                   className="font-display text-mak-small font-extrabold text-mak-ink no-underline hover:text-mak-accent focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-mak-accent"

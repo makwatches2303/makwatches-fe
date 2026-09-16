@@ -2,6 +2,7 @@
 
 import { Text, formatPrice } from "@/design-system";
 import type { ShippingOption } from "@/lib/api/checkout";
+import { presentShippingOptions } from "@/lib/shipping-presentation";
 
 /**
  * The delivery courier picker.
@@ -13,6 +14,21 @@ import type { ShippingOption } from "@/lib/api/checkout";
  *
  * The selected option is identified by its opaque `quote`, which is what the
  * server verifies. The displayed price is presentation only.
+ *
+ * ## What the customer sees
+ *
+ * Not the courier. "Xpressbees Air" and "Blue Dart Air" are MAK's commercial
+ * arrangements, not something a shopper is choosing between, so options are
+ * labelled by the speed the carrier itself quoted -- Express / Standard /
+ * Economy -- with the estimate and the price beside it. The provider and
+ * courier id stay on the option object for booking and tracking; they are
+ * simply never rendered.
+ *
+ * Filtering, de-duplication and ordering all live in
+ * @/lib/shipping-presentation. This component applies it again on its own
+ * props: checkout already filters before storing options in state, and this is
+ * the last line before render, so a non-customer-facing option cannot reach a
+ * radio button through any path.
  */
 
 export interface ShippingOptionsProps {
@@ -25,16 +41,6 @@ export interface ShippingOptionsProps {
   error?: string | null;
   onRetry?: () => void;
   disabled?: boolean;
-}
-
-/** The delivery estimate, or null when the carrier supplied none. */
-function etaLabel(option: ShippingOption): string | null {
-  if (option.estimatedDeliveryDays && option.estimatedDeliveryDays > 0) {
-    const days = option.estimatedDeliveryDays;
-    return days === 1 ? "Delivery in 1 day" : `Delivery in ${days} days`;
-  }
-  if (option.etd) return `Delivery by ${option.etd}`;
-  return null;
 }
 
 export function ShippingOptions({
@@ -82,7 +88,11 @@ export function ShippingOptions({
     );
   }
 
-  if (options.length === 0) {
+  // Applied again here, on this component's own props. Checkout already
+  // filters upstream; this guarantees the guarantee.
+  const presented = presentShippingOptions(options);
+
+  if (presented.length === 0) {
     return (
       <div className="border-2 border-mak-divider bg-mak-surface p-4">
         <Text size="small" tone="muted">
@@ -100,9 +110,8 @@ export function ShippingOptions({
       </legend>
 
       <div role="radiogroup" aria-label="Delivery option" className="flex flex-col gap-2.5">
-        {options.map((option) => {
+        {presented.map(({ option, label, estimate }) => {
           const selected = option.quote === selectedQuote;
-          const eta = etaLabel(option);
           return (
             <label
               key={option.id}
@@ -129,7 +138,7 @@ export function ShippingOptions({
               <span className="flex min-w-0 flex-1 flex-col gap-1">
                 <span className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
                   <span className="font-display text-mak-small font-extrabold tracking-[0.02em] text-mak-ink">
-                    {option.courierName}
+                    {label}
                   </span>
                   {/* tabular-nums so prices line up down the column. */}
                   <span className="font-display text-mak-small font-extrabold tabular-nums text-mak-ink">
@@ -138,17 +147,24 @@ export function ShippingOptions({
                 </span>
 
                 <span className="flex flex-wrap items-center gap-x-2.5 gap-y-1">
-                  {eta ? (
-                    <span className="text-mak-label text-mak-ink-subtle">{eta}</span>
+                  {estimate ? (
+                    <span className="text-mak-label text-mak-ink-subtle">
+                      {estimate}
+                    </span>
                   ) : null}
                   {option.recommended ? (
                     <span className="border border-mak-line px-1.5 py-0.5 font-display text-[10px] font-extrabold uppercase tracking-[0.1em] text-mak-ink-subtle">
                       Recommended
                     </span>
                   ) : null}
-                  {option.mode ? (
+                  {/*
+                    `mode` ("Air" / "Surface") is how the carrier moves the
+                    parcel, not a choice the customer is making, so it is
+                    replaced by the one operational fact that does affect them.
+                  */}
+                  {option.codAvailable ? (
                     <span className="text-mak-label text-mak-ink-subtle">
-                      {option.mode}
+                      Cash on delivery available
                     </span>
                   ) : null}
                 </span>

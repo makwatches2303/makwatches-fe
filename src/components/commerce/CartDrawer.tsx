@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import { usePathname } from "next/navigation";
 import { Button, Drawer, EmptyState } from "@/design-system";
 import {
   selectCartCount,
@@ -34,6 +35,30 @@ export function CartDrawer() {
       trackViewCart(lines, subtotal);
     }
   }, [open]);
+
+  /*
+    Close whenever the route changes.
+
+    "Checkout" in the summary is an ordinary <Link>. It navigated, but nothing
+    told the UI store, so the drawer stayed mounted over the checkout page with
+    its scroll lock still applied.
+
+    Closing from the link's own onClick looks like the obvious fix and is not:
+    it unmounts the anchor while the click is still being handled, which
+    cancels the navigation outright -- measured, the path never left /shop.
+    Reacting to the committed route change instead leaves the link alone, and
+    covers every other way out of the drawer (a line item's product link, the
+    empty-state button) rather than just this one.
+
+    Mirrors the pattern MobileNav already uses for the same problem.
+  */
+  const pathname = usePathname();
+  useEffect(() => {
+    if (open) close();
+    // Only pathname should trigger this: including `open` would close the
+    // drawer the moment it opened.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
 
   const isEmpty = lines.length === 0;
 

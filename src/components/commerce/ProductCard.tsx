@@ -49,7 +49,6 @@ export function ProductCard({
   const openQuickView = useUIStore((state) => state.openQuickView);
 
   const image = resolveProductImage(product);
-  const label = product.collection || product.subcategory || product.category;
   const soldOut = product.stock <= 0;
   const { price, compareAt } = effectivePrice(product);
 
@@ -81,19 +80,28 @@ export function ProductCard({
           {/* The card name is the accessible name for this link. */}
           <span className="sr-only">{product.name}</span>
           {/*
-            A taller frame on mobile only.
+            A 4:5 well on mobile, square from `sm`.
 
-            The catalogue is photographed at 1000x1000, so a square frame and a
-            square image scale 1:1 and the watch is exactly the column's width.
-            A 4:5 frame lets `cover` scale the same photograph up by 25% -- a
-            uniform scale in both axes, so nothing is stretched -- and the
-            overflow it trims is (k-1)/2k = 10% of the source from each side.
-            Measured across the catalogue, the studio shots carry 18.9%-35.7%
-            of blank margin around the watch, so that 10% is margin in every
-            case and no watch is cut.
+            Two things make the photograph dominate the tile rather than share
+            it with the text:
 
-            `sm:aspect-square` puts tablet and desktop back exactly as they
-            were; this is a mobile change only.
+            **A taller frame.** At 390px the card is 172px wide, so the well is
+            172x215px against a description block of roughly 85px plus the
+            36px action bar -- the image is now comfortably the larger half,
+            which it was not when both were square.
+
+            **`cover` rather than `contain`.** The catalogue is shot at
+            1000x1000, and a *contained* square image is constrained by the
+            shorter side of its frame: in a taller frame the watch would stay
+            at the column's width and the extra height would be dead white
+            band. Covering lets it scale to fill, which renders it ~25% larger.
+            The overflow is (k-1)/2k = 10% of the source trimmed from each
+            side, and the studio shots carry 18.9%-35.7% of blank margin around
+            the watch -- so that 10% is margin, and no watch is cut.
+
+            Desktop is untouched by the fit change: for a square source in the
+            square `sm` frame, cover and contain produce exactly the same
+            result (scale 1, no crop either way).
           */}
           <ProductImage
             media={image}
@@ -101,19 +109,28 @@ export function ProductCard({
             sizes={IMAGE_SIZES.productGrid}
             ratio="portrait"
             className="sm:aspect-square"
+            fit="cover"
             priority={priority}
             hoverZoom
           />
         </Link>
 
-        {label ? (
-          <Badge className="pointer-events-none absolute left-2 top-2 sm:left-2.5 sm:top-2.5 max-w-[calc(100%-2.75rem)] truncate border px-1.5 py-0.5 text-[9px] sm:text-[10px]">
-            {label}
-          </Badge>
-        ) : null}
+        {/*
+          The category badge is gone.
 
+          It rendered `product.collection || product.subcategory ||
+          product.category`, which for this catalogue meant every tile was
+          stamped "METAL WATCH" or "LEATHER WATCH" -- a strap material presented
+          as if it were the product's identity, directly over the photograph.
+          The brand and the product name below already say what the piece is.
+
+          Only the badge is removed. `product.subcategory` and `category` are
+          untouched in the data and still drive category routing, filters and
+          the breadcrumb on the product page.
+        */}
         <WishlistButton
           product={product}
+          size="xs"
           className="absolute right-2 top-2 sm:right-2.5 sm:top-2.5"
         />
 
@@ -169,7 +186,7 @@ export function ProductCard({
         Nothing is removed: title, brand line, price and the struck-through
         compare-at all still render at a legible size.
       */}
-      <div className="flex min-w-0 flex-1 flex-col gap-0.5 sm:gap-1.5 p-2.5 sm:p-4 pb-3 sm:pb-5">
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5 sm:gap-1.5 p-2 sm:p-4 pb-2.5 sm:pb-5">
         {/* Title: 2-line clamp, clean responsive size, uniform height */}
         <h3
           // leading-[1.3] on mobile is tighter and it is also what keeps the
@@ -215,7 +232,7 @@ export function ProductCard({
           value={price}
           compareAt={compareAt}
           size="sm"
-          className="mt-auto pt-1.5 sm:pt-3 !text-sm sm:!text-base md:!text-lg font-bold"
+          className="mt-auto pt-1 sm:pt-3 !text-sm sm:!text-base md:!text-lg font-bold"
         />
       </div>
     </article>

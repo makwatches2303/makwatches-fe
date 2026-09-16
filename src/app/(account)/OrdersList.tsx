@@ -13,6 +13,7 @@ import {
 } from "@/design-system";
 import { listOrders, type Order } from "@/lib/api/orders";
 
+import { OrderItemImage } from "./OrderItemImage";
 import { OrderStatusBadge } from "./OrderStatusBadge";
 
 /**
@@ -97,6 +98,35 @@ export function OrdersList() {
                   </span>
                 </div>
               </div>
+
+              {/*
+                The pieces themselves, not just their names.
+
+                An order is recognised by what is in it, and this row was a
+                comma-joined string of product names clipped to one line. Up to
+                four thumbnails, with the remainder counted -- enough to
+                identify the order at a glance without turning the list into a
+                gallery.
+              */}
+              {order.items.length > 0 ? (
+                <div className="mt-3.5 flex items-center gap-2">
+                  {order.items.slice(0, 4).map((item, index) => (
+                    <OrderItemImage
+                      key={`${item.productId}-${index}`}
+                      image={item.image}
+                      productId={item.productId}
+                      productName={item.productName}
+                      className="size-14"
+                      sizes="56px"
+                    />
+                  ))}
+                  {order.items.length > 4 ? (
+                    <span className="text-mak-label text-mak-subtle">
+                      +{order.items.length - 4} more
+                    </span>
+                  ) : null}
+                </div>
+              ) : null}
 
               <Text size="small" tone="muted" className="mt-3 line-clamp-1">
                 {order.items.map((item) => item.productName).join(", ")}
