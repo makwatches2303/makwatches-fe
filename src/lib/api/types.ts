@@ -103,6 +103,16 @@ export interface Product {
   sku?: string;
   collection?: string;
   /** Links sibling colorways of the same watch. Empty means standalone. */
+  /**
+   * The small rendition of the main image, when the API has one stored.
+   *
+   * Sent by the API for listing responses so a grid drawing a 200px square
+   * does not download a 1500px photograph -- image optimization at the edge
+   * is off, so whatever the page asks for is what the browser downloads.
+   * Absent for products whose images predate renditions, in which case the
+   * full-size image is used as before.
+   */
+  thumbnail?: string;
   variantGroupId?: string;
   /** Shown on the variant picker, e.g. "Elite Black". */
   variantLabel?: string;

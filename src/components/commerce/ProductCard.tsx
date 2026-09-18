@@ -5,7 +5,7 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Badge, Price, Text } from "@/design-system";
 import type { Product } from "@/lib/api/types";
-import { resolveProductImage, IMAGE_SIZES } from "@/lib/media";
+import { resolveProductThumbnail, IMAGE_SIZES } from "@/lib/media";
 import { effectivePrice } from "@/lib/pricing";
 import { useUIStore } from "@/store/ui";
 
@@ -48,7 +48,9 @@ export function ProductCard({
 }: ProductCardProps) {
   const openQuickView = useUIStore((state) => state.openQuickView);
 
-  const image = resolveProductImage(product);
+  // The card draws a small square: the grid rendition is the right asset,
+  // and falls back to the full-size image when a product has no rendition.
+  const image = resolveProductThumbnail(product);
   const soldOut = product.stock <= 0;
   const { price, compareAt } = effectivePrice(product);
 

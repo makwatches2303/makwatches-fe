@@ -4,7 +4,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
 import type { MediaRef, Product } from "@/lib/api/types";
-import { resolveProductImage } from "@/lib/media";
+import { resolveProductThumbnail } from "@/lib/media";
 import { trackAddToCart, trackRemoveFromCart, trackApplyCoupon } from "@/lib/analytics";
 
 /**
@@ -84,7 +84,7 @@ function toLine(product: Product, quantity: number, size?: string): CartLine {
     name: product.name,
     price: product.price,
     quantity,
-    image: resolveProductImage(product),
+    image: resolveProductThumbnail(product),
     meta: product.collection || product.category,
     size,
     slug: product.slug,

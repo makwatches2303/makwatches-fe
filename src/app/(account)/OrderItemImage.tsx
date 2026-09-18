@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { ProductImage } from "@/components/commerce";
 import { getProductById } from "@/lib/api/catalog";
-import { resolveProductImage } from "@/lib/media";
+import { resolveProductThumbnail } from "@/lib/media";
 
 /**
  * The product thumbnail on a customer's order line.
@@ -68,7 +68,7 @@ export function OrderItemImage({
         setResolvedLive(true);
         // resolveProductImage prefers the structured media array and falls back
         // to the legacy fields, exactly as the catalogue does elsewhere.
-        const live = product ? resolveProductImage(product) : null;
+        const live = product ? resolveProductThumbnail(product) : null;
         if (live?.url) setSrc(live.url);
       })
       .catch(() => {

@@ -4,7 +4,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 
 import type { MediaRef, Product } from "@/lib/api/types";
-import { resolveProductImage } from "@/lib/media";
+import { resolveProductThumbnail } from "@/lib/media";
 import { trackAddToWishlist } from "@/lib/analytics";
 
 /**
@@ -42,7 +42,7 @@ function toLine(product: Product): WishlistLine {
     productId: product.id,
     name: product.name,
     price: product.price,
-    image: resolveProductImage(product),
+    image: resolveProductThumbnail(product),
     meta: product.collection || product.category,
     slug: product.slug,
     inStock: product.stock > 0,

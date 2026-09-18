@@ -166,6 +166,22 @@ export function resolveProductImage(
   return resolveProductImages(product)[0] ?? null;
 }
 
+/**
+ * The image to draw in a grid, card or cart line.
+ *
+ * Prefers the small rendition the API sends for listings, falling back to the
+ * full-size primary image for anything uploaded before renditions existed.
+ * Worth the separate function: with edge image optimization switched off, a
+ * card that reaches for the full-size image downloads the whole photograph to
+ * fill a thumbnail, twenty times over on a listing page.
+ */
+export function resolveProductThumbnail(
+  product: Pick<Product, "name" | "media" | "images" | "imageUrl" | "thumbnail">
+): MediaRef | null {
+  const thumbnail = toMediaRef(product.thumbnail, product.name);
+  return thumbnail ?? resolveProductImage(product);
+}
+
 /** Props ready to spread onto a next/image component. */
 export interface ImageProps {
   src: string;
