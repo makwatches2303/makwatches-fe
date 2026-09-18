@@ -123,18 +123,21 @@ export default function Showroom({
     loader.setCrossOrigin("anonymous");
 
     /**
-     * Texture URLs go through Next's image optimizer rather than straight to
-     * the storage host.
+     * Texture URLs go through our own media route rather than straight to the
+     * storage host.
      *
      * A WebGL texture is read back by the GPU, so the browser requires CORS on
-     * the image response -- and the storage bucket does not send it. Routing
-     * through /_next/image makes every texture same-origin, and returns a
-     * sensibly sized one instead of a full-resolution product photograph.
+     * the image response -- and the storage bucket does not send it. Serving
+     * the bytes from our own origin is what makes the texture usable.
+     *
+     * This was /_next/image until image optimization was switched off (the
+     * Vercel quota is exhausted; see next.config.ts), which took that route
+     * with it and left every texture 404ing. See src/app/api/media/route.ts.
      */
     const textureURL = (src: string) =>
       src.startsWith("/") && !src.startsWith("//")
         ? src
-        : `/_next/image?url=${encodeURIComponent(src)}&w=640&q=75`;
+        : `/api/media?url=${encodeURIComponent(src)}`;
 
     /**
      * The card shown for a piece with no photograph on file.
