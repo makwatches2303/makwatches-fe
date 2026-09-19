@@ -9,7 +9,7 @@ import {
   Text,
 } from "@/design-system";
 import { CategoryShowcase } from "@/components/marketing";
-import { fetchCategories, isApiConfigured } from "@/lib/api/server";
+import { fetchCategories, fetchStorefront, isApiConfigured } from "@/lib/api/server";
 import { resolveCategoryFrontDoors } from "@/lib/category-front-doors";
 
 /**
@@ -76,6 +76,11 @@ export default async function CollectionsPage() {
     );
   }
 
+  // Admin-managed header (Storefront -> Page headings), falling back to the
+  // shipped copy per field so this page is never headless.
+  const { listings } = await fetchStorefront();
+  const header = listings.categories;
+
   const categories = await fetchCategories();
   // The same five front doors the homepage band shows, resolved the same way.
   // See @/lib/category-front-doors -- defined once so the two cannot drift.
@@ -88,14 +93,16 @@ export default async function CollectionsPage() {
         <Container>
           <div className="max-w-3xl">
             <Eyebrow withRule tone="accent" className="mb-5">
-              Shop by category
+              {header.eyebrow}
             </Eyebrow>
             <Heading level="display" as="h1" tone="inverse">
-              Shop by Category
+              {header.title}
             </Heading>
-            <Text size="lead" tone="inverse" className="mt-5 max-w-xl opacity-80">
-              Find the right timepiece for every style, occasion and generation.
-            </Text>
+            {header.description ? (
+              <Text size="lead" tone="inverse" className="mt-5 max-w-xl opacity-80">
+                {header.description}
+              </Text>
+            ) : null}
           </div>
         </Container>
       </Section>

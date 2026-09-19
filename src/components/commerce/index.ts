@@ -49,6 +49,7 @@ export {
   type ShopControlsProps,
 } from "./ShopControls";
 
+export { CatalogSearch, type CatalogSearchProps } from "./CatalogSearch";
 export { SearchOverlay } from "./SearchOverlay";
 export {
   SearchSuggestions,

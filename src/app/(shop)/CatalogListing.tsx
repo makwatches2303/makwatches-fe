@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+
 import {
   Container,
   ErrorState,
@@ -7,7 +9,12 @@ import {
   Section,
   Text,
 } from "@/design-system";
-import { ProductGrid, ShopControls, ShopSort } from "@/components/commerce";
+import {
+  CatalogSearch,
+  ProductGrid,
+  ShopControls,
+  ShopSort,
+} from "@/components/commerce";
 import {
   fetchFilters,
   fetchProducts,
@@ -46,6 +53,16 @@ export interface CatalogListingProps {
   searchParams: Record<string, string | string[] | undefined>;
   /** Base path used to build pagination links. */
   basePath: string;
+  /**
+   * Render an in-listing search box above the results.
+   *
+   * Opt-in, and scoped by construction: the box only writes `q` into this
+   * URL, which is then fetched together with this listing's own `scope`, so a
+   * search here can never reach outside the collection being viewed.
+   */
+  searchLabel?: string;
+  /** Placeholder for the search box. Falls back to `searchLabel`. */
+  searchPlaceholder?: string;
 }
 
 /** First value of a possibly-repeated search param. */
@@ -117,6 +134,8 @@ export async function CatalogListing({
   lockedParams = [],
   searchParams,
   basePath,
+  searchLabel,
+  searchPlaceholder,
 }: CatalogListingProps) {
   if (!isApiConfigured()) {
     return (
@@ -188,6 +207,27 @@ export async function CatalogListing({
             </aside>
 
             <div className="min-w-0">
+              {searchLabel ? (
+                <div className="mb-6">
+                  {/*
+                    Suspense because CatalogSearch reads the URL through
+                    useSearchParams; without a boundary a statically rendered
+                    listing would have to bail out to client rendering
+                    wholesale.
+                  */}
+                  <Suspense
+                    fallback={
+                      <div className="h-11 w-full border-2 border-mak-divider bg-mak-bg" />
+                    }
+                  >
+                    <CatalogSearch
+                      label={searchLabel}
+                      placeholder={searchPlaceholder}
+                    />
+                  </Suspense>
+                </div>
+              ) : null}
+
               <div className="mb-6 flex flex-wrap items-center justify-between gap-4 border-b-2 border-mak-line pb-4">
                 <Text size="small" tone="muted" aria-live="polite">
                   {page.failed

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { CatalogListing } from "../(shop)/CatalogListing";
+import { fetchStorefront } from "@/lib/api/server";
 
 export const metadata: Metadata = {
   title: "Women's watches",
@@ -17,14 +18,22 @@ export default async function WomenPage({
 }) {
   const params = await searchParams;
 
+  // Admin-managed header -- see the note on the men's page.
+  const { listings } = await fetchStorefront();
+  const header = listings.women;
+
   return (
     <div className="mak bg-mak-bg">
       <CatalogListing
-        eyebrow="For her"
-        title="The women's edit."
+        eyebrow={header.eyebrow}
+        title={header.title}
+        description={header.description || undefined}
         scope={{ mainCategory: "Women" }}
         searchParams={params}
         basePath="/women"
+        // Scoped search -- see the note on the men's page.
+        searchLabel="Search women's watches"
+        searchPlaceholder="Search women's watches by name, brand or style"
       />
     </div>
   );

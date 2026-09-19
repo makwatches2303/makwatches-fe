@@ -44,20 +44,50 @@ export function isCustomerFacingOption(option: ShippingOption): boolean {
 }
 
 /**
- * A customer-facing name for a delivery speed.
+ * The delivery speed a customer is choosing between.
  *
- * Derived from the carrier's own estimate, never from the courier's brand. An
- * option with no estimate is called "Standard Delivery": it is the neutral
- * description, where "Economy" would imply a slowness the carrier never stated
- * and "Express" a speed it never promised.
+ * These are the same four tiers the API records on the order
+ * (models.DeliveryTierFor in makwatches-be) and the admin panel prioritises
+ * by. The boundaries must stay in step across all three: the API classifies
+ * the signed quote at checkout and stores the result, and a disagreement here
+ * would show the shopper one speed and the admin another for the same order.
  */
-export function deliveryLabel(option: ShippingOption): string {
+export type DeliveryTier = "express" | "standard" | "economy" | "flexible";
+
+/**
+ * Classify a carrier's estimate into a delivery speed.
+ *
+ * Derived from the carrier's own estimate, never from the courier's brand and
+ * never from its price. An option with no estimate is "standard": it is the
+ * neutral description, where "economy" would imply a slowness the carrier
+ * never stated and "express" a speed it never promised.
+ */
+export function deliveryTier(option: ShippingOption): DeliveryTier {
   const days = option.estimatedDeliveryDays;
 
-  if (typeof days !== "number" || days <= 0) return "Standard Delivery";
-  if (days <= 2) return "Express Delivery";
-  if (days <= 5) return "Standard Delivery";
-  return "Economy Delivery";
+  if (typeof days !== "number" || days <= 0) return "standard";
+  if (days <= 2) return "express";
+  if (days <= 5) return "standard";
+  if (days <= 8) return "economy";
+  return "flexible";
+}
+
+/** How each tier reads to a shopper. */
+const TIER_LABELS: Record<DeliveryTier, string> = {
+  express: "Express Delivery",
+  standard: "Standard Delivery",
+  economy: "Economy Delivery",
+  flexible: "Flexible Delivery",
+};
+
+/**
+ * A customer-facing name for a delivery speed.
+ *
+ * Never a courier, a provider, a courier id or a transport mode -- those are
+ * MAK's commercial arrangements, not something a shopper is choosing between.
+ */
+export function deliveryLabel(option: ShippingOption): string {
+  return TIER_LABELS[deliveryTier(option)];
 }
 
 /**
@@ -79,6 +109,8 @@ export function deliveryEstimate(option: ShippingOption): string | null {
 export interface PresentedShippingOption {
   /** The original, unmodified option -- this is what gets selected and sent. */
   option: ShippingOption;
+  /** The speed tier, for callers that want to style or group by it. */
+  tier: DeliveryTier;
   label: string;
   estimate: string | null;
 }
@@ -147,6 +179,7 @@ export function presentShippingOptions(
       .filter(isCustomerFacingOption)
       .map((option) => ({
         option,
+        tier: deliveryTier(option),
         label: deliveryLabel(option),
         estimate: deliveryEstimate(option),
       }))

@@ -52,8 +52,37 @@ const REVALIDATE_CATALOG = 300;
 /** CMS content changes more often during setup, so it is refreshed sooner. */
 const REVALIDATE_CONTENT = 60;
 
+/**
+ * Cache tags for admin-managed content.
+ *
+ * A TTL alone cannot make an admin edit appear promptly: `revalidate` is a
+ * ceiling on staleness, not a signal, so a saved heading keeps rendering from
+ * Next's Data Cache -- and, for a prerendered route, its Full Route Cache --
+ * until the window lapses. Tagging these reads lets the API purge them the
+ * moment the content is written; see /api/revalidate and, on the API side,
+ * internal/revalidate.
+ *
+ * The strings are the contract with the API. They are duplicated there, in
+ * internal/revalidate/revalidate.go, and in the endpoint's allow-list; all
+ * three must agree.
+ */
+export const CACHE_TAGS = {
+  /** The storefront presentation document: navigation, footer, section copy. */
+  storefront: "storefront",
+  /** The homepage CMS: hero slides, category cards, gallery, tech showcase. */
+  homeContent: "home-content",
+} as const;
+
+export type CacheTag = (typeof CACHE_TAGS)[keyof typeof CACHE_TAGS];
+
 interface FetchOptions {
   revalidate?: number;
+  /**
+   * Cache tags this response belongs to, so it can be purged on demand rather
+   * than only on expiry. Left off for catalog reads, which are not
+   * push-invalidated today and whose TTL is the intended behaviour.
+   */
+  tags?: readonly string[];
   /** Identifies the call in server logs when it fails. */
   label: string;
 }
@@ -66,7 +95,7 @@ interface FetchOptions {
  */
 async function getJSON<T>(
   path: string,
-  { revalidate = REVALIDATE_CATALOG, label }: FetchOptions
+  { revalidate = REVALIDATE_CATALOG, tags, label }: FetchOptions
 ): Promise<{ data: T; meta?: PaginationMeta } | null> {
   const base = tryGetApiBaseUrl();
   if (!base) {
@@ -78,7 +107,11 @@ async function getJSON<T>(
 
   try {
     const response = await fetch(`${base}${path}`, {
-      next: { revalidate },
+      // Tags travel with the cache entry. `revalidate` stays as the safety
+      // net: if the purge call never arrives -- the API cannot reach us, or
+      // the secret is not configured -- the content still refreshes on its
+      // own, just later.
+      next: tags?.length ? { revalidate, tags: [...tags] } : { revalidate },
       headers: { Accept: "application/json" },
     });
 
@@ -266,6 +299,7 @@ export async function fetchStorefront(): Promise<StorefrontContent> {
   const result = await getJSON<unknown>("/api/v1/storefront", {
     label: "fetchStorefront",
     revalidate: REVALIDATE_CONTENT,
+    tags: [CACHE_TAGS.storefront],
   });
 
   if (!result) return FALLBACK_STOREFRONT;
@@ -427,6 +461,7 @@ export async function fetchHomeContent(): Promise<HomeContent> {
   const result = await getJSON<unknown>("/home-content", {
     label: "fetchHomeContent",
     revalidate: REVALIDATE_CONTENT,
+    tags: [CACHE_TAGS.homeContent],
   });
 
   if (!result) return EMPTY_HOME_CONTENT;

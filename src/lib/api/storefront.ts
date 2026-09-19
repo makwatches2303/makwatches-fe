@@ -231,9 +231,39 @@ export interface CategoryTilesContent {
   tiles: CategoryTileConfig[];
 }
 
+/**
+ * The editorial header of one catalog listing page.
+ *
+ * Copy only. Which products the page shows is decided by the route's own
+ * scope, which nothing here can widen -- `/men` stays the Men category tree
+ * whatever an admin types above it.
+ */
+export interface ListingHeader {
+  eyebrow: string;
+  title: string;
+  description: string;
+}
+
+/**
+ * Header copy for the listing pages whose headings are editorial.
+ *
+ * /collections/[slug] and /category/[slug] are deliberately absent: they are
+ * headed by the collection's and the category's own names, which come from the
+ * catalogue itself.
+ */
+export interface ListingPagesContent {
+  /** /shop -- the whole catalogue. */
+  collection: ListingHeader;
+  /** /collections -- the "shop by category" front doors. */
+  categories: ListingHeader;
+  men: ListingHeader;
+  women: ListingHeader;
+}
+
 export interface StorefrontContent {
   navigation: NavigationContent;
   categoryTiles: CategoryTilesContent;
+  listings: ListingPagesContent;
   hero: HeroContent;
   trust: TrustContent;
   stats: StatsContent;
@@ -258,6 +288,26 @@ export interface StorefrontContent {
  * and incomplete rather than complete and invented.
  */
 export const DEFAULT_STOREFRONT: StorefrontContent = {
+  // The wording /shop, /men and /women used to hardcode, kept verbatim so
+  // moving it into the admin changed nothing visible. Mirrors
+  // models.DefaultStorefrontContent's Listings block.
+  listings: {
+    collection: {
+      eyebrow: "The collection",
+      title: "Every watch we make.",
+      description:
+        "The complete MAK catalogue. Filter by brand, price and availability.",
+    },
+    categories: {
+      eyebrow: "Shop by category",
+      title: "Shop by Category",
+      description:
+        "Find the right timepiece for every style, occasion and generation.",
+    },
+    men: { eyebrow: "For him", title: "The men's edit.", description: "" },
+    women: { eyebrow: "For her", title: "The women's edit.", description: "" },
+  },
+
   // Reproduces the reference navigation exactly, so moving it out of the
   // frontend loses no functionality. Mirrors models.DefaultStorefrontContent.
   navigation: {
@@ -454,6 +504,27 @@ export const DEFAULT_STOREFRONT: StorefrontContent = {
  * a new section appears with its shipped default rather than as `undefined`
  * crashing the render.
  */
+/**
+ * One listing header, with every empty field filled from the shipped default.
+ *
+ * Field by field, and treating whitespace as empty: an admin who clears the
+ * headline gets the shipped headline back rather than a page with no heading,
+ * and one who rewrites only the headline keeps the shipped eyebrow beside it.
+ */
+function listingHeader(
+  raw: Partial<ListingHeader> | undefined,
+  fallback: ListingHeader
+): ListingHeader {
+  const pick = (value: string | undefined, spare: string) =>
+    typeof value === "string" && value.trim().length > 0 ? value : spare;
+
+  return {
+    eyebrow: pick(raw?.eyebrow, fallback.eyebrow),
+    title: pick(raw?.title, fallback.title),
+    description: pick(raw?.description, fallback.description),
+  };
+}
+
 export function normalizeStorefront(raw: unknown): StorefrontContent {
   const data = (raw ?? {}) as Partial<StorefrontContent>;
   const d = DEFAULT_STOREFRONT;
@@ -485,6 +556,12 @@ export function normalizeStorefront(raw: unknown): StorefrontContent {
         .sort((a, b) => (a.order ?? 0) - (b.order ?? 0)),
     },
     categoryTiles: { ...d.categoryTiles, ...categoryTiles },
+    listings: {
+      collection: listingHeader(data.listings?.collection, d.listings.collection),
+      categories: listingHeader(data.listings?.categories, d.listings.categories),
+      men: listingHeader(data.listings?.men, d.listings.men),
+      women: listingHeader(data.listings?.women, d.listings.women),
+    },
     hero: { ...d.hero, ...(data.hero ?? {}) },
     trust: { ...d.trust, ...(data.trust ?? {}) },
     stats: { ...d.stats, ...(data.stats ?? {}) },

@@ -316,6 +316,9 @@ export interface PlacedOrder {
     charge: number;
     estimatedDeliveryDays?: number;
     etd?: string;
+    /** The speed the customer chose -- express / standard / economy /
+     * flexible -- classified server-side from the signed quote. */
+    deliveryTier?: string;
   };
   status: string;
   paymentStatus: string;

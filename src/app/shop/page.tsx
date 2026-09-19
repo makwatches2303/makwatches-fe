@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import { CatalogListing } from "../(shop)/CatalogListing";
+import { fetchStorefront } from "@/lib/api/server";
 
 /**
  * The full catalog.
@@ -26,16 +27,21 @@ export default async function ShopPage({
   const params = await searchParams;
   const query = typeof params.q === "string" ? params.q : undefined;
 
+  // The header is admin-managed (Storefront -> Pages). It used to be three
+  // literals here, which made the one part of this page anyone would want to
+  // reword the one part that needed a deploy. Falls back to the shipped copy
+  // when the API is unreachable, so the page is never headless.
+  const { listings } = await fetchStorefront();
+  const header = listings.collection;
+
   return (
     <div className="mak bg-mak-bg">
       <CatalogListing
-        eyebrow={query ? "Search results" : "The collection"}
-        title={query ? `“${query}”` : "Every watch we make."}
-        description={
-          query
-            ? undefined
-            : "The complete MAK catalogue. Filter by brand, price and availability."
-        }
+        // A search replaces the editorial header with the query itself: the
+        // admin's headline describes the catalogue, not these results.
+        eyebrow={query ? "Search results" : header.eyebrow}
+        title={query ? `“${query}”` : header.title}
+        description={query ? undefined : header.description}
         searchParams={params}
         basePath="/shop"
       />
