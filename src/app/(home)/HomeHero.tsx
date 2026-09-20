@@ -1,6 +1,7 @@
 import { Hero } from "@/components/marketing";
 import { formatPrice } from "@/design-system";
 import { toMediaRef } from "@/lib/media";
+import { productHref } from "@/lib/product-href";
 import type { HeroSlide } from "@/lib/api/home-content";
 import type { Product } from "@/lib/api/types";
 import type { HeroContent, TrustContent } from "@/lib/api/storefront";
@@ -52,6 +53,12 @@ export function HomeHero({ content, trust, slide, linkedProduct }: HomeHeroProps
         }
       : undefined;
 
+  // The hero opens on a real piece, so it links to that piece's page -- the
+  // same page every catalogue tile leads to, with the same purchase panel. Only
+  // when a product is genuinely behind the slide: a slide that merely carries
+  // an image has nothing to sell and is not dressed up as though it does.
+  const href = linkedProduct ? productHref(linkedProduct) : undefined;
+
   const supporting =
     typeof content.pricedFrom === "number"
       ? `${content.supporting} Priced from ${formatPrice(content.pricedFrom)}.`
@@ -68,6 +75,7 @@ export function HomeHero({ content, trust, slide, linkedProduct }: HomeHeroProps
       image={image}
       imageAlt={slide?.title?.trim() || ""}
       plaque={plaque}
+      href={href}
       // Empty unless the admin has entered real service terms.
       trustItems={trust.enabled ? trust.items : []}
       scrollCue

@@ -37,3 +37,4 @@ export {
   AdminPreviewToolbar,
   type AdminSectionMarkupProps,
 } from "./AdminSectionMarkup";
+export { WhatsAppFab, type WhatsAppFabProps } from "./WhatsAppFab";

@@ -6,6 +6,16 @@ import Lenis from "lenis";
 // Global Lenis instance
 let lenisInstance: Lenis | null = null;
 
+/**
+ * The live Lenis instance, or null when smooth scrolling is not running.
+ *
+ * A plain getter rather than the hook below, for callers that need the
+ * instance inside an effect at the moment it fires. `useLenis` publishes it
+ * through state, which means it is still null on the render where a route
+ * change happens -- exactly when a scroll reset needs it.
+ */
+export const getLenis = (): Lenis | null => lenisInstance;
+
 export const useLenis = () => {
   const [lenis, setLenis] = useState<Lenis | null>(null);
 

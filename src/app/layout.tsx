@@ -6,11 +6,13 @@ import { AuthProvider } from "@/context/AuthContext";
 import { ToastProvider } from "@/design-system";
 import NavGuard from "@/components/NavGuard";
 import FooterGuard from "@/components/FooterGuard";
+import WhatsAppGuard from "@/components/WhatsAppGuard";
 import { Footer as MakFooter } from "@/components/layout/Footer";
 import { fetchStorefront } from "@/lib/api/server";
 import { FALLBACK_STOREFRONT, MAK_INSTAGRAM_URL } from "@/lib/api/storefront";
 import PageTransition from "@/components/page-transition";
 import LenisProvider from "@/components/lenis-provider";
+import ScrollToTop from "@/components/ScrollToTop";
 import { MarketingProviders } from "@/components/marketing/MarketingProviders";
 import { GoogleAnalytics } from "@/components/analytics/GoogleAnalytics";
 
@@ -180,6 +182,13 @@ export default async function RootLayout({
               {/* NavGuard will hide Navbar on /login */}
               <NavGuard navigation={storefront.navigation} />
 
+              {/*
+                Every route change starts at the top. Lenis and the page
+                transition each undo the router's own scroll reset; see
+                ScrollToTop.
+              */}
+              <ScrollToTop />
+
               {/* Page transition wrapper */}
               <main className="flex-grow pt-0 md:pt-0">
                 <PageTransition>{children}</PageTransition>
@@ -195,6 +204,13 @@ export default async function RootLayout({
                   />
                 }
               />
+
+              {/*
+                The WhatsApp button, on every page that has site chrome. Last in
+                the tree so it is last in tab order: a shopper tabbing a page
+                reaches the content and the footer before the contact shortcut.
+              */}
+              <WhatsAppGuard />
             </AuthProvider>
           </ToastProvider>
         </LenisProvider>
