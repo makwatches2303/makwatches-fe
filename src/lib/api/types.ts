@@ -18,8 +18,19 @@ export interface ApiResponse<T> {
 export interface PaginationMeta {
   page: number;
   limit: number;
-  total: number;
-  pages: number;
+  /**
+   * Total matching records, and the page count derived from it.
+   *
+   * Absent on cursor requests: counting the whole result set on every batch of
+   * a progressive load is a scan nobody sees. Read it from the first response
+   * and keep it. See `hasMore` for "is there another batch".
+   */
+  total?: number;
+  pages?: number;
+  /** Cursor for the following batch. Absent or empty at the end of results. */
+  nextCursor?: string;
+  /** Whether another batch exists. Authoritative in both pagination modes. */
+  hasMore?: boolean;
 }
 
 /** A structured reference to a stored asset. Mirrors models.MediaRef. */

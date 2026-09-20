@@ -14,11 +14,7 @@ import {
 import { ProductGallery, ProductGrid, VariantPicker } from "@/components/commerce";
 import { presentSpecs } from "@/lib/specs";
 import { resolveProductImages } from "@/lib/media";
-import {
-  fetchProductReviews,
-  fetchRelatedProducts,
-  fetchProductVariants,
-} from "@/lib/api/server";
+import { fetchRelatedProducts, fetchProductVariants } from "@/lib/api/server";
 import type { Product } from "@/lib/api/types";
 import {
   enabledPolicyPanels,
@@ -31,9 +27,9 @@ import { ProductJsonLd } from "./ProductJsonLd";
 /**
  * The product detail page.
  *
- * A server component: gallery, copy, specifications, reviews and related
- * products are all rendered on the server. Only the purchase controls and the
- * gallery's viewer carry a client boundary.
+ * A server component: gallery, copy, specifications and related products are
+ * all rendered on the server. Only the purchase controls and the gallery's
+ * viewer carry a client boundary.
  *
  * Every section is conditional on real data. A product with no recorded
  * specifications shows no specification table; a catalogue with no shipping
@@ -80,8 +76,7 @@ function buildCrumbs(product: Product): Crumb[] {
 }
 
 export async function ProductDetail({ product, policies }: ProductDetailProps) {
-  const [reviewSummary, related, variants] = await Promise.all([
-    fetchProductReviews(product.id),
+  const [related, variants] = await Promise.all([
     fetchRelatedProducts(product, 4),
     product.variantGroupId
       ? fetchProductVariants(product.variantGroupId, product.id)
@@ -103,7 +98,7 @@ export async function ProductDetail({ product, policies }: ProductDetailProps) {
 
   return (
     <>
-      <ProductJsonLd product={product} crumbs={crumbs} reviews={reviewSummary} />
+      <ProductJsonLd product={product} crumbs={crumbs} />
 
       <Section spacing="none" className="pt-6">
         <Container>
@@ -225,54 +220,6 @@ export async function ProductDetail({ product, policies }: ProductDetailProps) {
               ) : null}
             </div>
           </div>
-        </Container>
-      </Section>
-
-      {/* Reviews */}
-      <Section spacing="default" tone="surface">
-        <Container>
-          <SectionHeader
-            eyebrow="Owner reviews"
-            title={
-              reviewSummary.average !== null
-                ? `${reviewSummary.average.toFixed(1)} from ${reviewSummary.total} ${
-                    reviewSummary.total === 1 ? "review" : "reviews"
-                  }`
-                : "No reviews yet."
-            }
-            headingAs="h2"
-            className="mb-8"
-          />
-
-          {reviewSummary.reviews.length === 0 ? (
-            <Text size="small" tone="muted">
-              This piece has not been reviewed yet. Reviews appear here once
-              verified owners leave them.
-            </Text>
-          ) : (
-            <ul className="flex flex-col">
-              {reviewSummary.reviews.map((review) => (
-                <li
-                  key={review.id}
-                  className="border-b-[1.5px] border-mak-divider py-5 last:border-b-0"
-                >
-                  <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <span className="font-display text-mak-small font-extrabold text-mak-ink">
-                      {review.title || review.userName || "Verified owner"}
-                    </span>
-                    <span className="text-mak-micro uppercase tracking-[0.12em] text-mak-subtle">
-                      {review.rating}/5
-                    </span>
-                  </div>
-                  {review.comment ? (
-                    <Text size="small" tone="muted" className="mt-2">
-                      {review.comment}
-                    </Text>
-                  ) : null}
-                </li>
-              ))}
-            </ul>
-          )}
         </Container>
       </Section>
 

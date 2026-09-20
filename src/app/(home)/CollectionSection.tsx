@@ -158,7 +158,24 @@ export function CollectionSection({
               }
             />
           ) : (
-            <ProductGrid products={visible} priorityCount={priorityCount} />
+            /*
+              Two columns on a phone, four from tablet up: the rail carries
+              eight pieces, so the band reads as four rows of two or two rows
+              of four, and every column count divides eight.
+
+              completeRowsOnly is what keeps that true once the chips filter
+              the pool. A facet that matches five pieces would otherwise end
+              on a row with a hole in it; instead the odd one out steps aside
+              at the widths where it cannot fill a row. This is a curated
+              preview with the whole catalogue a button away, so a piece held
+              back here is still one click from view.
+            */
+            <ProductGrid
+              products={visible}
+              cols={{ base: 2, sm: 2, md: 4, lg: 4, xl: 4 }}
+              completeRowsOnly
+              priorityCount={priorityCount}
+            />
           )}
 
           {viewAll ? (

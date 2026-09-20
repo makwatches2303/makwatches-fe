@@ -43,6 +43,9 @@ export default async function ShopPage({
         title={query ? `“${query}”` : header.title}
         description={query ? undefined : header.description}
         searchParams={params}
+        // Browsing listings keep loading as the shopper scrolls; see
+        // CatalogListing's `infinite` prop.
+        infinite
         basePath="/shop"
       />
     </div>

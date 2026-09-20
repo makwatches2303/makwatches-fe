@@ -153,6 +153,16 @@ export interface RuleGridProps extends HTMLAttributes<HTMLDivElement> {
   };
   /** Drop the outer 2px border, for grids that sit inside another ruled box. */
   bordered?: boolean;
+  /**
+   * Close an incomplete last row with invisible filler cells. On by default.
+   *
+   * Pass false when the caller has already made every row complete at every
+   * breakpoint -- for instance by hiding the products that would form a
+   * partial row. Fillers are counted from the children, and a caller that
+   * hides some of its own would otherwise get fillers for rows that no longer
+   * exist.
+   */
+  fill?: boolean;
   children?: ReactNode;
 }
 
@@ -214,6 +224,7 @@ const XL_COLS = {
 export function RuleGrid({
   cols,
   bordered = true,
+  fill = true,
   className,
   children,
   ...rest
@@ -222,29 +233,45 @@ export function RuleGrid({
 
   // An incomplete last row leaves empty grid tracks with no child to paint
   // .mak-rule-grid's own cell background over them, so the container's
-  // divider-colored background shows through as a stray filled-in box.
-  // Filler cells (invisible, no content) close those gaps. base=1 never
-  // has this problem -- a single column is always "full" -- so fillers
-  // only ever need to render from md upward.
+  // divider-colored background shows through as a stray filled-in box --
+  // most visibly as a grey square beside the last product in a 2-up mobile
+  // grid with an odd number of products. Filler cells (invisible, no
+  // content) close those gaps.
+  //
+  // Every breakpoint the grid defines needs its own count, including base:
+  // a column count is only ever "always full" at 1-up, and the product grid
+  // opens at 2-up.
   const count = Children.count(children);
-  const neededAtSm = sm ? (sm - (count % sm)) % sm : 0;
-  const neededAtMd = md ? (md - (count % md)) % md : 0;
-  const neededAtLg = lg ? (lg - (count % lg)) % lg : 0;
-  const neededAtXl = xl ? (xl - (count % xl)) % xl : 0;
-  const fillerCount = Math.max(neededAtSm, neededAtMd, neededAtLg, neededAtXl);
-  const fillers = Array.from({ length: fillerCount }, (_, i) => (
-    <div
-      key={`filler-${i}`}
-      aria-hidden="true"
-      className={cn(
-        "hidden",
-        Boolean(sm) && i < neededAtSm && "sm:block md:hidden",
-        i < neededAtMd && "md:block lg:hidden",
-        i < neededAtLg && (Boolean(xl) ? "lg:block xl:hidden" : "lg:block"),
-        Boolean(xl) && i < neededAtXl && "xl:block"
-      )}
-    />
-  ));
+  const needed = (columns: number | undefined) =>
+    columns ? (columns - (count % columns)) % columns : 0;
+
+  // Written out per breakpoint because Tailwind scans source text statically;
+  // an interpolated `${prefix}block` would never be emitted.
+  const steps = [
+    { needed: needed(base), show: "block", hide: "hidden" },
+    ...(sm ? [{ needed: needed(sm), show: "sm:block", hide: "sm:hidden" }] : []),
+    { needed: needed(md), show: "md:block", hide: "md:hidden" },
+    { needed: needed(lg), show: "lg:block", hide: "lg:hidden" },
+    ...(xl ? [{ needed: needed(xl), show: "xl:block", hide: "xl:hidden" }] : []),
+  ];
+
+  const fillerCount = fill ? Math.max(...steps.map((step) => step.needed)) : 0;
+  const fillers = Array.from({ length: fillerCount }, (_, i) => {
+    // One display class per breakpoint at most, emitted only where the
+    // filler's visibility actually changes. Naming both `md:block` and
+    // `md:hidden` would be decided by the order Tailwind emits them, not by
+    // the order they are written here, and `hidden` wins -- which silently
+    // dropped fillers wherever two adjacent breakpoints both needed one.
+    const classes: string[] = [];
+    let visible: boolean | null = null;
+    for (const step of steps) {
+      const show = i < step.needed;
+      if (show !== visible) classes.push(show ? step.show : step.hide);
+      visible = show;
+    }
+
+    return <div key={`filler-${i}`} aria-hidden="true" className={cn(classes)} />;
+  });
 
   return (
     <div

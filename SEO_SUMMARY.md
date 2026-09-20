@@ -63,7 +63,7 @@
   - Performance optimizations
 
 ### 8. **Social Media Integration**
-- Instagram profile linked: @mak_watches.23
+- Instagram profile linked: @makwatches.in
 - Structured data includes social profiles
 - OG tags for beautiful social sharing
 - Twitter card for Twitter/X sharing
@@ -111,8 +111,8 @@ Your site is optimized to appear when users search for:
 ## 📱 Instagram Integration
 
 Your Instagram profile is integrated:
-- **Handle**: @mak_watches.23
-- **URL**: https://www.instagram.com/mak_watches.23
+- **Handle**: @makwatches.in
+- **URL**: https://www.instagram.com/makwatches.in
 - **Integration**: Linked in metadata and structured data
 
 **Recommended Instagram Bio Update:**
@@ -239,7 +239,7 @@ See `public/OG_IMAGE_INSTRUCTIONS.md` for details.
 **High Probability (Brand Keywords):**
 - ✅ MAK Watches
 - ✅ mak watches
-- ✅ @mak_watches.23
+- ✅ @makwatches.in
 
 **Good Probability (With Content):**
 - 📊 luxury watches India
@@ -283,4 +283,4 @@ Your website is now fully optimized for search engines with:
 
 **Created**: October 12, 2025
 **Domain**: makwatches.in
-**Instagram**: @mak_watches.23
+**Instagram**: @makwatches.in

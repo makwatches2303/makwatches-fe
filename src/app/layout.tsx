@@ -8,7 +8,7 @@ import NavGuard from "@/components/NavGuard";
 import FooterGuard from "@/components/FooterGuard";
 import { Footer as MakFooter } from "@/components/layout/Footer";
 import { fetchStorefront } from "@/lib/api/server";
-import { FALLBACK_STOREFRONT } from "@/lib/api/storefront";
+import { FALLBACK_STOREFRONT, MAK_INSTAGRAM_URL } from "@/lib/api/storefront";
 import PageTransition from "@/components/page-transition";
 import LenisProvider from "@/components/lenis-provider";
 import { MarketingProviders } from "@/components/marketing/MarketingProviders";
@@ -40,7 +40,7 @@ export const metadata: Metadata = {
     "branded watches",
     "watch store India",
     "MAK Watches Instagram",
-    "mak_watches.23",
+    "makwatches.in",
   ],
   authors: [{ name: "MAK Watches" }],
   creator: "MAK Watches",
@@ -115,7 +115,7 @@ export const metadata: Metadata = {
     canonical: "https://makwatches.in",
   },
   other: {
-    "instagram:profile": "https://www.instagram.com/mak_watches.23",
+    "instagram:profile": MAK_INSTAGRAM_URL,
   },
 };
 
@@ -129,6 +129,7 @@ export default async function RootLayout({
   // themselves. Falls back to the shipped defaults if the endpoint is
   // unreachable, so a settings outage never costs the site its menus.
   const storefront = await fetchStorefront().catch(() => FALLBACK_STOREFRONT);
+  const socialProfiles = storefront.footer.social.map((item) => item.href);
   const structuredData = {
     "@context": "https://schema.org",
     "@type": "Store",
@@ -138,17 +139,19 @@ export default async function RootLayout({
     url: "https://makwatches.in",
     logo: "https://makwatches.in/mak-logo.svg",
     image: "https://makwatches.in/og-image.png",
-    sameAs: ["https://www.instagram.com/mak_watches.23"],
+    // Taken from the footer's own social list rather than restated here, so
+    // the profiles the markup claims and the ones the page links to cannot
+    // drift apart. Omitted entirely when there are none to name.
+    ...(socialProfiles.length > 0 ? { sameAs: socialProfiles } : {}),
     potentialAction: {
       "@type": "SearchAction",
       target: "https://makwatches.in/shop?search={search_term_string}",
       "query-input": "required name=search_term_string",
     },
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: "4.8",
-      reviewCount: "250",
-    },
+    // No aggregateRating. The figure that used to sit here was a hardcoded
+    // 4.8 from 250 reviews with nothing behind it, and the storefront now
+    // shows no reviews at all -- rating markup with no visible, real
+    // counterpart is a fabricated claim and a search-engine policy violation.
   };
 
   return (

@@ -279,6 +279,16 @@ export interface StorefrontContent {
 }
 
 /**
+ * The house Instagram account, and the only one.
+ *
+ * Exported so every place that names it -- the footer's shipped default, the
+ * site's structured data, the legacy footer -- reads the same literal. The
+ * site previously carried three different Instagram URLs, two of them pointing
+ * at accounts that are not MAK's; one constant is what stops that recurring.
+ */
+export const MAK_INSTAGRAM_URL = "https://www.instagram.com/makwatches.in";
+
+/**
  * What the storefront renders before an admin has configured anything, and
  * whenever the settings endpoint cannot be reached.
  *
@@ -294,7 +304,7 @@ export const DEFAULT_STOREFRONT: StorefrontContent = {
   listings: {
     collection: {
       eyebrow: "The collection",
-      title: "Every watch we make.",
+      title: "Timeless style . Everyday confidense.",
       description:
         "The complete MAK catalogue. Filter by brand, price and availability.",
     },
@@ -442,7 +452,9 @@ export const DEFAULT_STOREFRONT: StorefrontContent = {
   footer: {
     tagline:
       "Precision timepieces, engineered for the people who measure their days.",
-    social: [],
+    // The house account, not a placeholder: this is the real MAK Instagram, so
+    // it ships as the default rather than waiting on an admin to re-enter it.
+    social: [{ label: "Instagram", href: MAK_INSTAGRAM_URL }],
   },
   marquee: {
     enabled: true,
@@ -462,7 +474,7 @@ export const DEFAULT_STOREFRONT: StorefrontContent = {
       enabled: true,
       position: 1,
       eyebrow: "The collection",
-      title: "Every watch we make.",
+      title: "Timeless style . Everyday confidense.",
       source: "latest",
       limit: 8,
       filterable: true,
@@ -569,7 +581,15 @@ export function normalizeStorefront(raw: unknown): StorefrontContent {
     house: { ...d.house, ...(data.house ?? {}) },
     poster: { ...d.poster, ...(data.poster ?? {}) },
     boutique: { ...d.boutique, ...(data.boutique ?? {}) },
-    footer: { ...d.footer, ...(data.footer ?? {}) },
+    footer: {
+      ...d.footer,
+      ...(data.footer ?? {}),
+      // A document saved before the social list existed -- or by an admin who
+      // has simply not filled one in -- still gets the house accounts, the
+      // same way an unset menu falls back to the shipped one. An admin who
+      // does list destinations replaces them outright.
+      social: data.footer?.social?.length ? data.footer.social : d.footer.social,
+    },
     marquee: { ...d.marquee, ...(data.marquee ?? {}) },
     policies: {
       shipping: { ...d.policies.shipping, ...(data.policies?.shipping ?? {}) },

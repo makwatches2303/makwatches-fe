@@ -13,12 +13,23 @@ import { getImageProps, IMAGE_SIZES, type MediaRef } from "@/lib/media";
  * falls back to the branded MAK placeholder. The placeholder is styled as a
  * placeholder -- it must not read as product photography.
  *
+ * `fallback` sits between the two. A listing draws the small rendition the API
+ * advertises, but the API advertises it by naming convention rather than by
+ * checking the bucket, so a product whose rendition was never generated points
+ * at a URL that 403s. Handing the full-size original as the fallback means that
+ * product shows its photograph rather than the placeholder.
+ *
  * Takes a MediaRef rather than a URL string so the storage layer stays
  * swappable, per the media architecture.
  */
 
 export interface ProductImageProps {
   media: MediaRef | string | null | undefined;
+  /**
+   * Tried when `media` fails to load, before the placeholder. Supply the
+   * full-size original when `media` is a small rendition.
+   */
+  fallback?: MediaRef | string | null;
   /** Falls back to this when the media carries no alt of its own. */
   alt: string;
   /** Responsive `sizes`. Pick the preset matching the layout. */
@@ -60,6 +71,7 @@ const RATIO = {
 
 export function ProductImage({
   media,
+  fallback,
   alt,
   sizes = IMAGE_SIZES.productGrid,
   ratio = "square",
@@ -72,11 +84,21 @@ export function ProductImage({
   imageClassName,
 }: ProductImageProps) {
   const resolved = getImageProps(media, alt);
-  const [failed, setFailed] = useState(false);
+  const resolvedFallback = getImageProps(fallback, alt);
 
-  // A load failure is treated exactly like a missing reference.
-  const isPlaceholder = resolved.isPlaceholder || failed;
-  const src = failed ? "/mak-placeholder.svg" : resolved.src;
+  // Which source is being attempted. 0 is `media`; 1 is `fallback` where there
+  // is a distinct one to try; past the end of the chain is the placeholder.
+  const [attempt, setAttempt] = useState(0);
+
+  const chain = [resolved];
+  if (!resolvedFallback.isPlaceholder && resolvedFallback.src !== resolved.src) {
+    chain.push(resolvedFallback);
+  }
+
+  const current = chain[attempt];
+  // Exhausting the chain is treated exactly like a missing reference.
+  const isPlaceholder = !current || current.isPlaceholder;
+  const src = isPlaceholder ? "/mak-placeholder.svg" : current.src;
 
   return (
     <div
@@ -87,13 +109,18 @@ export function ProductImage({
       )}
     >
       <Image
+        // Keyed on the source so swapping to the fallback remounts the element
+        // rather than leaving next/image on its already-errored state.
+        key={src}
         src={src}
-        alt={isPlaceholder ? "" : resolved.alt}
+        alt={isPlaceholder ? "" : current.alt}
         fill
         sizes={sizes}
         priority={priority}
         onError={() => {
-          setFailed(true);
+          // Stop at the placeholder: incrementing past the chain when the
+          // placeholder itself fails would re-render forever.
+          setAttempt((n) => (n < chain.length ? n + 1 : n));
           onError?.();
         }}
         className={cn(

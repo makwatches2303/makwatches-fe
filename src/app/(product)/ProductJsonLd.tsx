@@ -1,7 +1,6 @@
 import type { Crumb } from "@/design-system";
 import type { Product } from "@/lib/api/types";
 import { resolveProductImages } from "@/lib/media";
-import type { ReviewSummary } from "@/lib/api/server";
 
 /**
  * Product and BreadcrumbList structured data.
@@ -9,17 +8,17 @@ import type { ReviewSummary } from "@/lib/api/server";
  * Built from the same product record and the same crumb array the page
  * renders, so the markup and the visible page can never disagree.
  *
- * Only fields the product genuinely carries are emitted. A missing brand, SKU,
- * image or rating is omitted rather than guessed: structured data that asserts
- * something untrue is worse than structured data that says less. In particular
- * `aggregateRating` is emitted only when a real review exists, since fabricating
- * one is both a lie to shoppers and a search-engine policy violation.
+ * Only fields the product genuinely carries are emitted. A missing brand, SKU
+ * or image is omitted rather than guessed: structured data that asserts
+ * something untrue is worse than structured data that says less. No
+ * `aggregateRating` is emitted at all -- the page shows no reviews, and rating
+ * markup that has no visible counterpart on the page is a search-engine policy
+ * violation as well as a claim shoppers cannot check.
  */
 
 export interface ProductJsonLdProps {
   product: Product;
   crumbs: Crumb[];
-  reviews: ReviewSummary;
   /** Absolute site origin, when known, so URLs in the markup are absolute. */
   origin?: string;
 }
@@ -27,7 +26,6 @@ export interface ProductJsonLdProps {
 export function ProductJsonLd({
   product,
   crumbs,
-  reviews,
   origin = "https://makwatches.in",
 }: ProductJsonLdProps) {
   const images = resolveProductImages(product)
@@ -64,14 +62,6 @@ export function ProductJsonLd({
   }
   if (product.sku) productLd.sku = product.sku;
   if (product.category) productLd.category = product.category;
-
-  if (reviews.average !== null && reviews.total > 0) {
-    productLd.aggregateRating = {
-      "@type": "AggregateRating",
-      ratingValue: Number(reviews.average.toFixed(1)),
-      reviewCount: reviews.total,
-    };
-  }
 
   const breadcrumbLd = {
     "@context": "https://schema.org",

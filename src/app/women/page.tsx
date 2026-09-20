@@ -30,6 +30,9 @@ export default async function WomenPage({
         description={header.description || undefined}
         scope={{ mainCategory: "Women" }}
         searchParams={params}
+        // Browsing listings keep loading as the shopper scrolls; see
+        // CatalogListing's `infinite` prop.
+        infinite
         basePath="/women"
         // Scoped search -- see the note on the men's page.
         searchLabel="Search women's watches"

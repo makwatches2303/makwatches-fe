@@ -11,6 +11,7 @@ import {
 } from "@/design-system";
 import {
   CatalogSearch,
+  ProductFeed,
   ProductGrid,
   ShopControls,
   ShopSort,
@@ -20,7 +21,13 @@ import {
   fetchProducts,
   isApiConfigured,
 } from "@/lib/api/server";
-import type { CatalogQuery } from "@/lib/api/types";
+import {
+  CATALOG_PAGE_SIZE,
+  catalogQueryFromParams,
+  firstParam,
+  type CatalogScope,
+} from "@/lib/catalog-query";
+import { nextRequestFrom } from "@/lib/catalog-feed";
 
 /**
  * The shared catalog listing.
@@ -35,9 +42,6 @@ import type { CatalogQuery } from "@/lib/api/types";
  * the browser and is shareable as a link. Only the controls are interactive.
  */
 
-/** Products per page. */
-const PAGE_SIZE = 24;
-
 export interface CatalogListingProps {
   eyebrow?: string;
   title: string;
@@ -46,7 +50,7 @@ export interface CatalogListingProps {
    * The scope this listing is locked to -- a gender, a category path, a
    * collection. Shoppers filter *within* it and can never filter out of it.
    */
-  scope?: Pick<CatalogQuery, "category" | "mainCategory" | "subcategory" | "collection" | "gender">;
+  scope?: CatalogScope;
   /** Query params that define the scope and survive a filter reset. */
   lockedParams?: string[];
   /** Raw search params from the route. */
@@ -63,67 +67,18 @@ export interface CatalogListingProps {
   searchLabel?: string;
   /** Placeholder for the search box. Falls back to `searchLabel`. */
   searchPlaceholder?: string;
-}
-
-/** First value of a possibly-repeated search param. */
-function first(value: string | string[] | undefined): string | undefined {
-  return Array.isArray(value) ? value[0] : value;
-}
-
-/** Translate the URL's sort key into catalog query fields. */
-function sortToQuery(sort: string | undefined): Pick<CatalogQuery, "sortBy" | "order"> {
-  switch (sort) {
-    case "price-asc":
-      return { sortBy: "price", order: "asc" };
-    case "price-desc":
-      return { sortBy: "price", order: "desc" };
-    case "name-asc":
-      return { sortBy: "name", order: "asc" };
-    case "newest":
-    case "featured":
-    default:
-      // No dedicated featured ordering exists yet; newest is the closest true
-      // proxy and is what the catalog is ordered by anyway.
-      return { sortBy: "createdAt", order: "desc" };
-  }
-}
-
-/** Build the catalog query from the URL. */
-function queryFromParams(
-  searchParams: CatalogListingProps["searchParams"],
-  scope: CatalogListingProps["scope"]
-): CatalogQuery {
-  const num = (key: string) => {
-    const raw = first(searchParams[key]);
-    if (!raw) return undefined;
-    const value = Number(raw);
-    return Number.isFinite(value) ? value : undefined;
-  };
-
-  const page = Math.max(1, num("page") ?? 1);
-  const brand = first(searchParams.brand);
-
-  return {
-    ...scope,
-    // Free-text search shares the listing, so /shop?q=… works without a
-    // separate route.
-    q: first(searchParams.q),
-    // A brand filter is multi-select and arrives comma-separated.
-    ...(brand ? { brand } : {}),
-    gender: scope?.gender ?? first(searchParams.gender),
-    dialColor: first(searchParams.dialColor),
-    dialShape: first(searchParams.dialShape),
-    dialType: first(searchParams.dialType),
-    strapColor: first(searchParams.strapColor),
-    strapMaterial: first(searchParams.strapMaterial),
-    style: first(searchParams.style),
-    minPrice: num("minPrice"),
-    maxPrice: num("maxPrice"),
-    inStock: first(searchParams.inStock) === "true" || undefined,
-    ...sortToQuery(first(searchParams.sort)),
-    page,
-    limit: PAGE_SIZE,
-  } as CatalogQuery;
+  /**
+   * Keep loading as the shopper scrolls, instead of numbering pages.
+   *
+   * Opt-in per route. The listings a shopper browses open-endedly -- /shop,
+   * /men, /women -- turn it on; the ones they arrive at with something
+   * specific in mind keep numbered pages, which link to a position in a way a
+   * scroll does not.
+   *
+   * Either way the first batch is the same server-rendered grid, so the page
+   * is identical to a crawler and to a browser with no JavaScript.
+   */
+  infinite?: boolean;
 }
 
 export async function CatalogListing({
@@ -136,6 +91,7 @@ export async function CatalogListing({
   basePath,
   searchLabel,
   searchPlaceholder,
+  infinite = false,
 }: CatalogListingProps) {
   if (!isApiConfigured()) {
     return (
@@ -150,7 +106,7 @@ export async function CatalogListing({
     );
   }
 
-  const query = queryFromParams(searchParams, scope);
+  const query = catalogQueryFromParams(searchParams, scope, CATALOG_PAGE_SIZE);
 
   // Facets are scoped to the listing, not the whole catalog, so /men never
   // offers a filter that would return nothing.
@@ -167,11 +123,31 @@ export async function CatalogListing({
   const totalPages = page.meta?.pages ?? 1;
   const currentPage = page.meta?.page ?? 1;
 
+  /*
+    How the feed continues past the server-rendered batch, read from the same
+    response the grid above was built from -- so it starts loading without
+    first re-fetching what is already on screen.
+
+    Derived by the same function the browser uses on every later batch. Reading
+    the response in two places was what broke this once already: the server
+    looked only for a cursor and called an 887-piece listing finished after 24.
+  */
+  const initialNext = nextRequestFrom(page.meta, CATALOG_PAGE_SIZE);
+
+  /*
+    Progressive loading is offered only where the route asked for it, and only
+    from the first page. Landing on ?page=3 means arriving at a bookmark or a
+    crawler's link into the middle of the catalogue; continuing to scroll from
+    there would build a grid whose beginning is missing. Those requests keep
+    the numbered pages that produced them.
+  */
+  const feed = infinite && currentPage === 1;
+
   /** Preserve every param except the page number when paginating. */
   const hrefFor = (target: number) => {
     const params = new URLSearchParams();
     for (const [key, value] of Object.entries(searchParams)) {
-      const single = first(value);
+      const single = firstParam(value);
       if (single && key !== "page") params.set(key, single);
     }
     if (target > 1) params.set("page", String(target));
@@ -241,6 +217,21 @@ export async function CatalogListing({
                 <ErrorState
                   title="Products could not be loaded."
                   description="The catalog is temporarily unavailable. Please refresh and try again."
+                />
+              ) : feed ? (
+                /*
+                  The feed is handed the server-rendered batch rather than
+                  fetching its own, so this renders exactly the grid the
+                  paginated branch would and only then starts growing it.
+                */
+                <ProductFeed
+                  initialProducts={page.items}
+                  initialNext={initialNext}
+                  query={query}
+                  priorityCount={4}
+                  emptyTitle="Nothing matches yet."
+                  emptyDescription="Try removing a filter, or widening the price range."
+                  listName={basePath}
                 />
               ) : (
                 <>

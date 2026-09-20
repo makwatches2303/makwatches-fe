@@ -5,7 +5,11 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Price, Text } from "@/design-system";
 import type { SearchResult } from "@/lib/api/types";
-import { resolveProductThumbnail, IMAGE_SIZES } from "@/lib/media";
+import {
+  resolveProductImage,
+  resolveProductThumbnail,
+  IMAGE_SIZES,
+} from "@/lib/media";
 import { effectivePrice } from "@/lib/pricing";
 
 import { ProductImage } from "./ProductImage";
@@ -111,6 +115,9 @@ export function SearchSuggestions({
                   <span className="size-14 shrink-0 border-[1.5px] border-mak-divider">
                     <ProductImage
                       media={resolveProductThumbnail(product)}
+                      // Some products advertise a rendition that was never
+                      // generated; the original is what actually loads.
+                      fallback={resolveProductImage(product)}
                       alt=""
                       sizes={IMAGE_SIZES.thumbnail}
                       grayscale={false}

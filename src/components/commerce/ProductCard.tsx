@@ -5,7 +5,11 @@ import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Badge, Price, Text } from "@/design-system";
 import type { Product } from "@/lib/api/types";
-import { resolveProductThumbnail, IMAGE_SIZES } from "@/lib/media";
+import {
+  resolveProductImage,
+  resolveProductThumbnail,
+  IMAGE_SIZES,
+} from "@/lib/media";
 import { effectivePrice } from "@/lib/pricing";
 import { useUIStore } from "@/store/ui";
 
@@ -51,6 +55,11 @@ export function ProductCard({
   // The card draws a small square: the grid rendition is the right asset,
   // and falls back to the full-size image when a product has no rendition.
   const image = resolveProductThumbnail(product);
+  // The API names the rendition by convention without checking that it was
+  // ever generated, so some products advertise a thumbnail URL that 403s.
+  // The original is the fallback, which is why those tiles show the watch
+  // rather than the placeholder.
+  const original = resolveProductImage(product);
   const soldOut = product.stock <= 0;
   const { price, compareAt } = effectivePrice(product);
 
@@ -107,6 +116,7 @@ export function ProductCard({
           */}
           <ProductImage
             media={image}
+            fallback={original}
             alt={product.name}
             sizes={IMAGE_SIZES.productGrid}
             ratio="portrait"

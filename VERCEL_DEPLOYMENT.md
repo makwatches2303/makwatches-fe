@@ -165,7 +165,7 @@ After deployment, test with:
 
 ### 12. Instagram Bio Update
 
-Update Instagram bio (@mak_watches.23) with:
+Update Instagram bio (@makwatches.in) with:
 
 ```
 🕐 Premium Luxury Watches

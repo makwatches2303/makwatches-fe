@@ -16,7 +16,9 @@ import { ProductImage } from "@/components/commerce/ProductImage";
  * Matches the reference composition exactly: an asymmetric 1.05fr/0.95fr split
  * with the editorial headline flush left, and on the right an offset accent
  * block sitting behind a 2px-bordered 4:5 image frame, with a bordered product
- * plaque overlapping its lower-left corner. A scroll cue sits centred beneath.
+ * plaque overlapping its lower-left corner -- stacked beneath the frame on a
+ * phone, where an overlap would bury the photograph. A scroll cue sits centred
+ * beneath.
  *
  * Copy is entirely prop-driven -- see src/content/home.ts. Nothing here has a
  * default, so an unconfigured hero renders structure without inventing claims.
@@ -154,26 +156,41 @@ export function Hero({
           </div>
 
           <div className="relative motion-safe:animate-[mak-rise_1.1s_cubic-bezier(0.16,1,0.3,1)_0.2s_both]">
-            {/* The offset accent block behind the frame. Decorative. */}
-            <div
-              aria-hidden="true"
-              className="absolute -bottom-5 -right-5 z-0 h-[78%] w-[70%] bg-mak-accent"
-            />
-
-            {/* 2px ink border and a 4:5 frame, exactly as the reference. */}
-            <div className="relative z-10 overflow-hidden border-2 border-mak-line bg-mak-surface">
-              <ProductImage
-                media={image ?? null}
-                alt={imageAlt}
-                sizes={IMAGE_SIZES.half}
-                ratio="portrait"
-                priority
-                grayscale
+            {/*
+              The frame and its accent block share their own positioning
+              context, so the plaque can sit beneath them in the flow on a
+              phone without the accent stretching to the taller column.
+            */}
+            <div className="relative">
+              {/* The offset accent block behind the frame. Decorative. */}
+              <div
+                aria-hidden="true"
+                className="absolute -bottom-5 -right-5 z-0 h-[78%] w-[70%] bg-mak-accent"
               />
+
+              {/* 2px ink border and a 4:5 frame, exactly as the reference. */}
+              <div className="relative z-10 overflow-hidden border-2 border-mak-line bg-mak-surface">
+                <ProductImage
+                  media={image ?? null}
+                  alt={imageAlt}
+                  sizes={IMAGE_SIZES.half}
+                  ratio="portrait"
+                  priority
+                  grayscale
+                />
+              </div>
             </div>
 
+            {/*
+              The plaque overlaps the frame's lower-left corner from sm up, as
+              the reference does. On a phone it drops below the frame instead:
+              a real product name runs to three or four lines at 375px, and an
+              overlapping plaque that tall hides the watch it is captioning.
+              The mt-5 clears the accent block's own 20px overhang, so the red
+              still reads as the offset it is.
+            */}
             {plaque ? (
-              <div className="absolute -left-3 bottom-8 z-20 border-2 border-mak-line bg-mak-bg px-4 py-3.5 sm:-left-4">
+              <div className="relative z-20 mt-5 border-2 border-mak-line bg-mak-bg px-4 py-3.5 sm:absolute sm:-left-4 sm:bottom-8 sm:mt-0">
                 {plaque.eyebrow ? (
                   <div className="text-mak-micro font-semibold uppercase tracking-[0.18em] text-mak-accent">
                     {plaque.eyebrow}

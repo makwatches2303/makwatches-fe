@@ -223,26 +223,6 @@ export const http = {
     request<T>({ ...config, method: "DELETE", url }),
 };
 
-/**
- * Build a query string from a params object, dropping undefined/null/empty
- * values so the API never receives `?category=&page=`.
- */
-export function toQueryString(params: Record<string, unknown>): string {
-  const search = new URLSearchParams();
-
-  for (const [key, value] of Object.entries(params)) {
-    if (value === undefined || value === null || value === "") continue;
-    if (typeof value === "boolean") {
-      if (value) search.set(key, "true");
-      continue;
-    }
-    if (Array.isArray(value)) {
-      if (value.length > 0) search.set(key, value.join(","));
-      continue;
-    }
-    search.set(key, String(value));
-  }
-
-  const qs = search.toString();
-  return qs ? `?${qs}` : "";
-}
+// Re-exported from its own module so importing it does not pull in axios.
+// See query-string.ts.
+export { toQueryString } from "./query-string";

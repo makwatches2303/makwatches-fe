@@ -9,6 +9,7 @@
 export { AccountMenu, type AccountMenuProps } from "./AccountMenu";
 export { ProductCard, productHref, type ProductCardProps } from "./ProductCard";
 export { ProductImage, type ProductImageProps } from "./ProductImage";
+export { ProductFeed, type ProductFeedProps } from "./ProductFeed";
 export { ProductGrid, type ProductGridProps } from "./ProductGrid";
 export { ProductGallery, type ProductGalleryProps } from "./ProductGallery";
 export { WishlistButton, type WishlistButtonProps } from "./WishlistButton";

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 
+import { MAK_INSTAGRAM_URL } from "@/lib/api/storefront";
+
 // Modern footer columns inspired by the reference design
 const columns = [
   {
@@ -82,7 +84,7 @@ function FooterDesktop() {
               <p className="text-white font-medium">makwatches2303@gmail.com</p>
               <div className="flex space-x-4">
                 <a
-                  href="https://instagram.com/makwatches"
+                  href={MAK_INSTAGRAM_URL}
                   className="text-gray-400 hover:text-white transition-colors"
                   target="_blank"
                   rel="noopener noreferrer"
@@ -310,7 +312,7 @@ function FooterMobile() {
           </p>
           <div className="flex justify-center space-x-6">
             <a
-              href="https://instagram.com/makwatches"
+              href={MAK_INSTAGRAM_URL}
               className="text-gray-400 hover:text-white transition-colors"
               target="_blank"
               rel="noopener noreferrer"

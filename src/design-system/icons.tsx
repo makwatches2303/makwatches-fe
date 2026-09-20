@@ -181,3 +181,19 @@ export function AlertIcon(props: IconProps) {
     </Icon>
   );
 }
+
+/**
+ * Instagram's glyph, drawn on the same 24px grid and stroked like the rest of
+ * the set so it sits beside the other icons rather than on top of them. The
+ * rounded frame is the mark's own geometry and is kept -- a squared-off version
+ * would match the house grid but would stop reading as Instagram.
+ */
+export function InstagramIcon(props: IconProps) {
+  return (
+    <Icon {...props}>
+      <rect x="2.5" y="2.5" width="19" height="19" rx="5" />
+      <circle cx="12" cy="12" r="4" />
+      <path d="M17.4 6.6h.01" />
+    </Icon>
+  );
+}

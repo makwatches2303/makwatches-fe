@@ -35,6 +35,9 @@ export default async function MenPage({
         scope={{ mainCategory: "Men" }}
         lockedParams={[]}
         searchParams={params}
+        // Browsing listings keep loading as the shopper scrolls; see
+        // CatalogListing's `infinite` prop.
+        infinite
         basePath="/men"
         // Scoped search. The box writes ?q= into this URL, which is fetched
         // together with the Men scope above, so it can only ever return men's

@@ -20,7 +20,7 @@ Location: src/app/layout.tsx
 ✓ Open Graph tags
 ✓ Twitter Cards
 ✓ Structured data (JSON-LD)
-✓ Instagram: @mak_watches.23
+✓ Instagram: @makwatches.in
 ```
 
 ### 3. **Search Engine Files**
@@ -54,7 +54,7 @@ next.config.ts → Image optimization, compression, headers
    - Submit sitemap: https://makwatches.in/sitemap.xml
 
 2. **Speed Up Indexing**
-   - Share on Instagram (@mak_watches.23)
+   - Share on Instagram (@makwatches.in)
    - Share on Facebook
    - Share on WhatsApp
    - Request indexing in Search Console
@@ -171,4 +171,4 @@ Replace `public/og-image.png` with 1200x630px image
 **You're ready to launch! 🚀**
 
 Domain: makwatches.in
-Instagram: @mak_watches.23
+Instagram: @makwatches.in

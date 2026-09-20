@@ -117,7 +117,7 @@ See `/public/OG_IMAGE_INSTRUCTIONS.md` for details.
 ### 5. Social Media Integration
 
 **Instagram:**
-- Profile linked: https://www.instagram.com/mak_watches.23
+- Profile linked: https://www.instagram.com/makwatches.in
 - Add Instagram feed widget to homepage
 - Use Instagram Shopping tags
 - Regular posts with product links
@@ -254,4 +254,4 @@ For SEO-related questions or updates, refer to:
 
 **Last Updated:** October 12, 2025
 **Domain:** https://makwatches.in
-**Instagram:** @mak_watches.23
+**Instagram:** @makwatches.in

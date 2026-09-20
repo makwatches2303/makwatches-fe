@@ -6,7 +6,8 @@
     "dev": "next dev --webpack",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test": "node --import ./test/alias-hook.mjs --test \"src/**/*.test.ts\""
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
