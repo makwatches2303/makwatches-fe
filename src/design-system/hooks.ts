@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useId, useRef, useState } from "react";
 
+import { getLenis } from "@/hooks/useLenis";
+
 /**
  * Shared behaviour for the interactive primitives.
  *
@@ -33,10 +35,25 @@ export function usePrefersReducedMotion(): boolean {
 }
 
 /**
+ * How many overlays hold the scroll lock right now.
+ *
+ * Overlays stack -- quick view over the cart drawer -- while Lenis is one
+ * instance for the whole page, so it may restart only when the last lock is
+ * released, not when the first of two overlays closes.
+ */
+let scrollLocks = 0;
+
+/**
  * Lock body scroll while an overlay is open.
  *
  * The scrollbar width is compensated with padding so the page behind does not
  * shift horizontally when the bar disappears.
+ *
+ * Lenis is stopped too. `overflow: hidden` only stops the browser scrolling
+ * the page; Lenis takes every wheel event and scrolls the page itself, so on
+ * its own the lock left the wheel moving the page behind an open drawer. An
+ * overlay's own scrolling area carries `data-lenis-prevent`, which Lenis
+ * honours even while stopped, so it keeps scrolling natively.
  */
 export function useScrollLock(locked: boolean): void {
   useEffect(() => {
@@ -52,9 +69,15 @@ export function useScrollLock(locked: boolean): void {
       body.style.paddingRight = `${scrollbarWidth}px`;
     }
 
+    scrollLocks += 1;
+    getLenis()?.stop();
+
     return () => {
       body.style.overflow = previousOverflow;
       body.style.paddingRight = previousPadding;
+
+      scrollLocks -= 1;
+      if (scrollLocks === 0) getLenis()?.start();
     };
   }, [locked]);
 }

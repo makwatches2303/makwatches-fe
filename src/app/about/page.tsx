@@ -57,7 +57,7 @@ import {
  *
  * Every service claim points at something that genuinely exists: the Razorpay
  * checkout, the courier integration and tracking behind /shipping, the
- * published policy at /refund, and the contact details in MAK_CONTACT. Timeline
+ * published policy at /replacement, and the contact details in MAK_CONTACT. Timeline
  * and warranty specifics are deliberately *not* restated here; they live on the
  * policy pages, which are the only place they can be kept accurate.
  */
@@ -160,7 +160,7 @@ const JOURNEY: { step: string; title: string; description: string }[] = [
     step: "05",
     title: "Support",
     description:
-      "Something wrong on arrival? Tell us within the window set out in our returns policy.",
+      "Something wrong on arrival? Tell us within 5 days of delivery, as set out in our replacement policy.",
   },
 ];
 
@@ -340,13 +340,13 @@ export default async function AboutPage() {
             ))}
           </RuleGrid>
           <Text size="small" tone="subtle" className="mt-6">
-            Delivery timelines, returns and refunds are set out in full on our{" "}
+            Delivery timelines and replacements are set out in full on our{" "}
             <Link href="/shipping" className="text-mak-accent underline">
               shipping
             </Link>{" "}
             and{" "}
-            <Link href="/refund" className="text-mak-accent underline">
-              returns
+            <Link href="/replacement" className="text-mak-accent underline">
+              replacement
             </Link>{" "}
             pages.
           </Text>

@@ -180,6 +180,9 @@ export function SearchOverlay() {
         aria-modal="true"
         aria-label="Search"
         tabIndex={-1}
+        // The panel is its own scroll box; Lenis would otherwise take the
+        // wheel for the page locked behind it.
+        data-lenis-prevent
         className={cn(
           "absolute inset-x-0 top-0 max-h-[85vh] overflow-y-auto overscroll-contain",
           "border-b-2 border-mak-line bg-mak-bg",

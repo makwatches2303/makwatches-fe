@@ -125,9 +125,13 @@ export interface BoxContentsPolicy {
   items: string[];
 }
 
+/**
+ * The API's document also carries a `returns` panel. The storefront does not
+ * read it: there is no returns policy, so no returns copy can reach a product
+ * page, whatever the stored document holds.
+ */
 export interface PoliciesContent {
   shipping: PolicyPanel;
-  returns: PolicyPanel;
   warranty: PolicyPanel;
   boxContents: BoxContentsPolicy;
 }
@@ -331,9 +335,8 @@ export const DEFAULT_STOREFRONT: StorefrontContent = {
     ],
     support: [
       { id: "shipping", label: "Shipping", href: "/shipping", enabled: true, order: 1 },
-      { id: "returns", label: "Returns", href: "/refund", enabled: true, order: 2 },
-      { id: "contact", label: "Contact", href: "/contact", enabled: true, order: 3 },
-      { id: "track", label: "Track order", href: "/orders", enabled: true, order: 4 },
+      { id: "contact", label: "Contact", href: "/contact", enabled: true, order: 2 },
+      { id: "track", label: "Track order", href: "/orders", enabled: true, order: 3 },
     ],
     footer: [
       { id: "shop", heading: "Shop", enabled: true, order: 1, items: [
@@ -349,13 +352,12 @@ export const DEFAULT_STOREFRONT: StorefrontContent = {
       ]},
       { id: "care", heading: "Care", enabled: true, order: 3, items: [
         { id: "shipping", label: "Shipping", href: "/shipping", enabled: true, order: 1 },
-        { id: "returns", label: "Returns", href: "/refund", enabled: true, order: 2 },
-        { id: "track", label: "Track order", href: "/orders", enabled: true, order: 3 },
+        { id: "track", label: "Track order", href: "/orders", enabled: true, order: 2 },
       ]},
       { id: "legal", heading: "Legal", enabled: true, order: 4, items: [
         { id: "privacy", label: "Privacy", href: "/privacy", enabled: true, order: 1 },
         { id: "terms", label: "Terms", href: "/terms", enabled: true, order: 2 },
-        { id: "refunds", label: "Refunds", href: "/refund", enabled: true, order: 3 },
+        { id: "replacement", label: "Replacement", href: "/replacement", enabled: true, order: 3 },
       ]},
     ],
   },
@@ -464,7 +466,6 @@ export const DEFAULT_STOREFRONT: StorefrontContent = {
   },
   policies: {
     shipping: { enabled: false, title: "Shipping", body: "" },
-    returns: { enabled: false, title: "Returns", body: "" },
     warranty: { enabled: false, title: "Warranty", body: "" },
     boxContents: { enabled: false, title: "What's included", items: [] },
   },
@@ -537,6 +538,21 @@ function listingHeader(
   };
 }
 
+/**
+ * Pages the storefront has removed.
+ *
+ * Menus are stored documents, so an entry saved while one of these pages
+ * existed -- the old "Returns" and "Refunds" links to /refund -- outlives the
+ * page. Such entries are dropped rather than rendered as a link to something
+ * that is gone. /refund now only redirects to /replacement (next.config.ts).
+ */
+const RETIRED_HREFS = new Set(["/refund"]);
+
+function isRetiredHref(href: string): boolean {
+  const path = href.split(/[?#]/)[0].replace(/\/+$/, "") || "/";
+  return RETIRED_HREFS.has(path);
+}
+
 export function normalizeStorefront(raw: unknown): StorefrontContent {
   const data = (raw ?? {}) as Partial<StorefrontContent>;
   const d = DEFAULT_STOREFRONT;
@@ -551,10 +567,11 @@ export function normalizeStorefront(raw: unknown): StorefrontContent {
 
   // The public API already filters and orders navigation, but this is the last
   // line before render: a stale cache or a direct call to the admin payload
-  // must not put a disabled entry on the page.
+  // must not put a disabled entry on the page -- nor one pointing at a page the
+  // storefront no longer has.
   const usableNav = (items: NavItem[] | undefined): NavItem[] =>
     (items ?? [])
-      .filter((item) => item?.enabled && item.href)
+      .filter((item) => item?.enabled && item.href && !isRetiredHref(item.href))
       .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
   return {
@@ -593,7 +610,6 @@ export function normalizeStorefront(raw: unknown): StorefrontContent {
     marquee: { ...d.marquee, ...(data.marquee ?? {}) },
     policies: {
       shipping: { ...d.policies.shipping, ...(data.policies?.shipping ?? {}) },
-      returns: { ...d.policies.returns, ...(data.policies?.returns ?? {}) },
       warranty: { ...d.policies.warranty, ...(data.policies?.warranty ?? {}) },
       boxContents: {
         ...d.policies.boxContents,
@@ -612,7 +628,7 @@ export function normalizeStorefront(raw: unknown): StorefrontContent {
 export function enabledPolicyPanels(
   policies: PoliciesContent
 ): PolicyPanel[] {
-  return [policies.shipping, policies.returns, policies.warranty].filter(
+  return [policies.shipping, policies.warranty].filter(
     (panel) => panel.enabled && panel.body.trim().length > 0
   );
 }

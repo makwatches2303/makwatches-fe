@@ -26,7 +26,7 @@ const columns = [
     links: [
       { label: "Terms & Conditions", href: "/terms" },
       { label: "Privacy Policy", href: "/privacy" },
-      { label: "Cancellation Policy", href: "/refund" },
+      { label: "Replacement Policy", href: "/replacement" },
       { label: "Shipping Policy", href: "/shipping" },
     ],
   },

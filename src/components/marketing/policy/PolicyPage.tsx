@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 /**
  * The shared shell every policy/info page (privacy, terms, shipping,
- * refund, ...) renders through: dark hero, then a narrow reading column of
+ * replacement, ...) renders through: dark hero, then a narrow reading column of
  * numbered PolicySections passed in as children.
  *
  * This is the single place that owns the page-level layout, so a change to

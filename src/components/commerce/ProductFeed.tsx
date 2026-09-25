@@ -13,7 +13,7 @@ import { ProductGrid } from "./ProductGrid";
  * A catalog listing that keeps loading as the shopper scrolls.
  *
  * One component for every listing that offers progressive loading -- /shop,
- * /men and /women differ only by the query handed in.
+ * /men, /women and /search differ only by the query handed in.
  *
  * The first batch arrives already rendered from the server, so this mounts
  * with a full grid and no request. What it adds is a sentinel below the grid:
@@ -35,6 +35,7 @@ export interface ProductFeedProps {
   priorityCount?: number;
   emptyTitle?: string;
   emptyDescription?: string;
+  emptyAction?: React.ReactNode;
   listName?: string;
 }
 
@@ -55,6 +56,7 @@ export function ProductFeed({
   priorityCount = 0,
   emptyTitle,
   emptyDescription,
+  emptyAction,
   listName,
 }: ProductFeedProps) {
   const { products, loading, error, hasMore, loadMore, retry } = useInfiniteCatalog({
@@ -92,6 +94,7 @@ export function ProductFeed({
         priorityCount={priorityCount}
         emptyTitle={emptyTitle}
         emptyDescription={emptyDescription}
+        emptyAction={emptyAction}
         listName={listName}
       />
 

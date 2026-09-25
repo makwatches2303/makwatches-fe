@@ -118,7 +118,14 @@ export function Drawer({
           </IconButton>
         </header>
 
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+        {/*
+          data-lenis-prevent: the wheel scrolls this body natively. Lenis
+          otherwise claims it for the page, which is locked behind the drawer.
+        */}
+        <div
+          data-lenis-prevent
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+        >
           {children}
         </div>
 

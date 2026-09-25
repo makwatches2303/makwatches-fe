@@ -174,7 +174,28 @@ export async function CatalogListing({
       <Section spacing="default">
         <Container>
           <div className="grid gap-10 lg:grid-cols-[260px_1fr] lg:gap-12">
-            <aside className="lg:sticky lg:top-28 lg:self-start">
+            {/*
+              Held in place beside the results on desktop, and never taller
+              than the screen.
+
+              Sticky alone did not hold it: the facet list runs past a
+              viewport, often past the results beside it, which left the panel
+              no room to stick, so it scrolled away with the page. Capped at
+              the viewport it always has room, and a long list scrolls inside
+              the panel instead. overscroll-contain keeps that inner scroll
+              from running on into the page.
+
+              data-lenis-prevent hands wheel events over the panel back to the
+              browser. Lenis claims every other wheel event for the page, so
+              without it the panel could not be scrolled at all.
+
+              -m-1 with p-1 leaves room inside the scroll box for the rows'
+              focus rings, drawn 4px outside each row, which it would clip.
+            */}
+            <aside
+              data-lenis-prevent
+              className="lg:sticky lg:top-28 lg:-m-1 lg:max-h-[calc(100dvh-8rem)] lg:self-start lg:overflow-y-auto lg:overscroll-contain lg:p-1 lg:[scrollbar-width:thin]"
+            >
               <ShopControls
                 filters={filters}
                 resultCount={total}

@@ -19,10 +19,6 @@ import { isChromelessRoute } from "./layout/rebuilt-routes";
  *     above the bar is better than raising it above in z-order, which would put
  *     it over "Add to bag" -- the one control on that page that matters more.
  *     From `lg` up the bar is gone and the default corner applies again.
- *
- * The nudge only moves the *default*. Once a shopper has dragged the button, the
- * position they chose wins on every page, which is the point of it being
- * draggable.
  */
 export default function WhatsAppGuard() {
   const pathname = usePathname() || "";

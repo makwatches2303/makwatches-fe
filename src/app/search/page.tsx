@@ -10,8 +10,11 @@ import {
   Section,
   Text,
 } from "@/design-system";
-import { ProductGrid } from "@/components/commerce";
+import { ProductFeed } from "@/components/commerce";
 import { fetchCollections, fetchProducts, isApiConfigured } from "@/lib/api/server";
+import type { CatalogQuery } from "@/lib/api/types";
+import { nextRequestFrom } from "@/lib/catalog-feed";
+import { CATALOG_PAGE_SIZE } from "@/lib/catalog-query";
 import { SearchTracker } from "@/components/analytics/SearchTracker";
 
 /**
@@ -96,12 +99,18 @@ export default async function SearchPage({
     );
   }
 
+  // One query object for the server-rendered first batch and every batch the
+  // feed fetches after it: the API refuses a cursor minted for a different
+  // query, so the two must not be built separately.
+  const catalogQuery: CatalogQuery = { q: query, page: 1, limit: CATALOG_PAGE_SIZE };
+
   const [page, collections] = await Promise.all([
-    fetchProducts({ q: query, limit: 24 }, `search(${query})`),
+    fetchProducts(catalogQuery, `search(${query})`),
     fetchCollections(),
   ]);
 
   const total = page.meta?.total ?? page.items.length;
+  const initialNext = nextRequestFrom(page.meta, CATALOG_PAGE_SIZE);
   const matchingCollections = collections.filter((collection) =>
     collection.name.toLowerCase().includes(query.toLowerCase())
   );
@@ -150,8 +159,14 @@ export default async function SearchPage({
             </div>
           ) : null}
 
-          <ProductGrid
-            products={page.items}
+          {/*
+            Keeps loading as the shopper scrolls, like /shop, /men and /women,
+            so every match is reachable rather than only the first batch.
+          */}
+          <ProductFeed
+            initialProducts={page.items}
+            initialNext={initialNext}
+            query={catalogQuery}
             priorityCount={4}
             emptyTitle={`No matches for “${query}”.`}
             emptyDescription="Try a shorter term, or browse the full collection."

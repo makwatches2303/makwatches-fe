@@ -77,9 +77,14 @@ const nextConfig: NextConfig = {
    *     rewrite can map to a slug. The rebuilt /product_details page should
    *     look the product up and issue its own redirect, the same way the
    *     Phase 3 pages now do.
+   *
+   * /refund held the cancellation and refund policy. The store now offers
+   * replacements only, so old links and search results land on that policy
+   * instead. Temporary on purpose: the change was made "for now", and a
+   * permanent redirect is cached by browsers and hard to take back.
    */
   async redirects() {
-    return [];
+    return [{ source: "/refund", destination: "/replacement", permanent: false }];
   },
 
   async headers() {

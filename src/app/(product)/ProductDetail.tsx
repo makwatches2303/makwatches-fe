@@ -39,7 +39,7 @@ import { ProductJsonLd } from "./ProductJsonLd";
 
 export interface ProductDetailProps {
   product: Product;
-  /** Admin-managed shipping / returns / warranty / box-contents copy. */
+  /** Admin-managed shipping / warranty / box-contents copy. */
   policies: PoliciesContent;
 }
 
